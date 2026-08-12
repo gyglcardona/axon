@@ -1090,6 +1090,17 @@ def listar_compras_siigo(
         conn.close()
 
 
+def _ruta_desde_archivo_origen(archivo_origen: str) -> Path:
+    """`compras.archivo_origen` puede haber quedado guardado con separadores
+    de Windows ("\\") si la factura se importó en una máquina Windows --
+    confirmado real: bases migradas de un PC Windows a un VPS Linux, donde
+    Path() trata "\\" como parte del NOMBRE del archivo (no como separador),
+    así que la ruta nunca se encuentra aunque el archivo sí exista en disco.
+    Normaliza antes de construir el Path -- no importa en qué sistema
+    operativo se escribió originalmente ni en cuál se está leyendo ahora."""
+    return Path(archivo_origen.replace("\\", "/"))
+
+
 def obtener_pdf(slug: str, cufe: str) -> bytes | None:
     """Bytes del PDF (representación gráfica) del ZIP o carpeta de origen de
     una factura ya importada, o None si esta no tiene PDF adjunto (o el
@@ -1109,7 +1120,7 @@ def obtener_pdf(slug: str, cufe: str) -> bytes | None:
     if not fila:
         return None
 
-    origen = Path(fila[0])
+    origen = _ruta_desde_archivo_origen(fila[0])
     if origen.suffix.lower() == ".zip":
         if not origen.exists():
             return None
@@ -2191,7 +2202,7 @@ def _extraer_tercero_de_origen(archivo_origen: str, cufe: str) -> dict | None:
     emisor -- la razón por la que nunca se guarda el XML crudo en la base:
     `archivo_origen` + `cufe` bastan para volver a él cuando hace falta
     (docstring de state_store)."""
-    ruta = Path(archivo_origen)
+    ruta = _ruta_desde_archivo_origen(archivo_origen)
     if not ruta.is_file():
         return None
     candidatos: list[bytes] = []
