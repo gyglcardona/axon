@@ -1,0 +1,10 @@
+{
+  "nit": "800242106",
+  "nombre": "SODIMAC COLOMBIA S.A.",
+  "slug": "",
+  "descripcion_md": "",
+  "comportamiento": {
+    "autorretenedor": true,
+    "gran_contribuyente": true
+  }
+}

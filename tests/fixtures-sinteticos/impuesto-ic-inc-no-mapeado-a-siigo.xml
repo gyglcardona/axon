@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - reproduce el patrón real confirmado en facturas de
+     SKY CORD S.A.S. (FESC50872, tipo IC) y COMCEL (E6083351704, tipo INC):
+     el impuesto SÍ tiene nombre reconocido por dian_parser (no es
+     "ESQUEMA_X"), pero no es IVA ni retención, así que no hay ningún
+     mecanismo que le resuelva un código de impuesto Siigo: si se deja
+     pegado a la línea, se pierde silenciosamente al armar el payload. -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT006</cbc:ID>
+  <cbc:IssueDate>2026-07-16</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO IC S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000006</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>1000</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>1260</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>1000.00</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>BOLSAS</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>1000.00</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>190.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>1000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount>190.00</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>70.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>1000.00</cbc:TaxableAmount>
+        <cbc:TaxAmount>70.00</cbc:TaxAmount>
+        <cbc:Percent>7</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>02</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+</Invoice>

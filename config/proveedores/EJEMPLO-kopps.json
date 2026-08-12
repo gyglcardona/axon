@@ -1,0 +1,9 @@
+{
+  "nit": "",
+  "nombre": "KOPPS",
+  "slug": "kopps",
+  "descripcion_md": "docs/02-reglas-negocio/perfiles-proveedor/EJEMPLO-kopps-impoconsumo.md",
+  "comportamiento": {
+    "impuestos_adicionales": ["Impoconsumo"]
+  }
+}

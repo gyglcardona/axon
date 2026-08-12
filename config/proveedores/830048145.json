@@ -1,0 +1,10 @@
+{
+  "nit": "830048145",
+  "nombre": "SIIGO S.A.S",
+  "slug": "",
+  "descripcion_md": "",
+  "comportamiento": {
+    "autorretenedor": true,
+    "gran_contribuyente": true
+  }
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - no es una factura real. Reproduce el patrón confirmado
+     en facturas reales de QUALA/KOPPS/COMMERK: cac:PartyTaxScheme/cbc:TaxLevelCode
+     trae varios códigos DIAN de responsabilidad fiscal juntos, separados por ";"
+     (O-13 = Gran Contribuyente, O-15 = Autorretenedor, O-23 = Agente de retención IVA). -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT003</cbc:ID>
+  <cbc:IssueDate>2026-07-01</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO GRAN CONTRIBUYENTE S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000003</cbc:CompanyID>
+        <cbc:TaxLevelCode listName="No aplica">O-13;O-15;O-23</cbc:TaxLevelCode>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>100000</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>119000</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>100000</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Producto (fixture)</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>100000</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

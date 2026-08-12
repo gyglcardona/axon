@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - no es una factura real. Reproduce el patrón confirmado
+     en facturas reales de QUALA (Distribuidora El Manantial): impuestos de
+     línea con TaxScheme/ID que dian_parser.TAX_SCHEME_MAP no reconoce (32 =
+     "ADV", 36 = "ICL"), además del IVA normal. -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT002</cbc:ID>
+  <cbc:IssueDate>2026-07-01</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO ADV ICL S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000002</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>200000</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>227000</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>100000</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Producto con ADV (fixture)</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>100000</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>24000</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>100000</cbc:TaxableAmount>
+        <cbc:TaxAmount>19000</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>100000</cbc:TaxableAmount>
+        <cbc:TaxAmount>5000</cbc:TaxAmount>
+        <cbc:Percent>5</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>32</cbc:ID><cbc:Name>ADV</cbc:Name></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>100000</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Producto con ICL (fixture)</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>100000</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>3000</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>100000</cbc:TaxableAmount>
+        <cbc:TaxAmount>3000</cbc:TaxAmount>
+        <cbc:Percent>3</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>36</cbc:ID><cbc:Name>ICL</cbc:Name></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+</Invoice>

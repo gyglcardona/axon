@@ -1,0 +1,25 @@
+{
+  "nit": "800111222",
+  "nombre": "Empresa Ejemplo S.A.S.",
+  "slug": "iva-no-discriminado-ejemplo",
+  "credenciales_siigo": {
+    "nota": "Ejemplo — valores ficticios, nunca commitear credenciales reales",
+    "usuario": "TU_USUARIO_SIIGO",
+    "access_key": "TU_ACCESS_KEY",
+    "partner_id": "Axon"
+  },
+  "conexion_drive": {
+    "carpeta_id": "TU_CARPETA_ID_DE_DRIVE"
+  },
+  "politicas": {
+    "iva_no_discriminado": {
+      "activa": true,
+      "descripcion_md": "docs/02-reglas-negocio/politicas-empresa/EJEMPLO-800111222-iva-no-discriminado.md",
+      "comportamiento": {
+        "accion": "mover_iva_a_item",
+        "descripcion_item": "IVA no discriminado (política contable de la empresa)",
+        "cuenta_contable": null
+      }
+    }
+  }
+}

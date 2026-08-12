@@ -1,0 +1,47 @@
+{
+  "nit": "",
+  "nombre": "",
+  "slug": "",
+  "destino_causacion": "siigo",
+  "destino_causacion_nota": "\"siigo\" | \"contai\" -- a qué sistema se causa esta empresa. Si falta este campo, el código asume \"siigo\" (compatibilidad con empresas ya configuradas).",
+  "credenciales_siigo": {
+    "nota": "NO llenar este archivo con valores reales fuera de tu máquina/servidor seguro. Este archivo debe estar en .gitignore.",
+    "usuario": "",
+    "access_key": "",
+    "clave_portal_siigo": "",
+    "clave_portal_siigo_nota": "Contraseña de login web a siigo.com (humano). No es la misma que access_key, que es lo que usa la API.",
+    "partner_id": ""
+  },
+  "conexion_drive": {
+    "nota": "carpeta_id NO es secreto (es solo el id de la carpeta de Drive que la empresa compartió). conexion_id indica QUÉ cuenta de Google se usa para leerla -- \"\" = la conexión heredada/compartida (compatibilidad con lo que ya funcionaba antes de que existieran conexiones por empresa); si no está vacío, es el id de una conexión en config/google/conexiones/registro.json. Ver docs/03-ingesta-dian/conexion-google.md.",
+    "carpeta_id": "",
+    "conexion_id": ""
+  },
+  "conexion_gmail": {
+    "nota": "Ingesta de facturas desde Gmail (bandeja de entrada + spam), independiente de conexion_drive.carpeta_id pero usa la MISMA conexion_id de conexion_drive (una sola cuenta de Google autoriza Drive y Gmail juntos). desde_fecha se fija una sola vez -- el backend rechaza cambiarla si ya tiene valor; ultima_sincronizacion la actualiza el propio sistema después de cada corrida, nunca a mano.",
+    "activo": false,
+    "buscar_en_spam": true,
+    "desde_fecha": "",
+    "ultima_sincronizacion": ""
+  },
+  "config_contai": {
+    "nota": "Solo aplica si destino_causacion es \"contai\". Contai no tiene API -- estas cuentas arman el asiento de cada factura en el plano de movimientos. Vacío (\"\") = todavía sin configurar; nunca se inventa una cuenta al exportar, se bloquea esa factura con un motivo explícito.",
+    "comprobante": "00010",
+    "modo_pago_default": "contado",
+    "cuenta_credito_contado": "",
+    "cuenta_credito_credito": "",
+    "cuentas_iva_por_tarifa": {},
+    "cuentas_retencion_por_tipo": {}
+  },
+  "politicas": {
+    "iva_no_discriminado": {
+      "activa": false,
+      "descripcion_md": "docs/02-reglas-negocio/politicas-empresa/<archivo>.md",
+      "comportamiento": {
+        "accion": "mover_iva_a_item",
+        "descripcion_item": "IVA no discriminado (política contable de la empresa)",
+        "cuenta_contable": null
+      }
+    }
+  }
+}

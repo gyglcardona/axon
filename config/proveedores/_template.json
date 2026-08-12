@@ -1,0 +1,9 @@
+{
+  "nit": "",
+  "nombre": "",
+  "slug": "",
+  "descripcion_md": "docs/02-reglas-negocio/perfiles-proveedor/<archivo>.md",
+  "comportamiento": {
+    "impuestos_adicionales": []
+  }
+}

@@ -1,0 +1,34 @@
+config/empresas/*.json
+!config/empresas/_template.json
+!config/empresas/EJEMPLO-*.json
+!config/empresas/registro.json
+config/empresas/*.md
+!config/empresas/_template.md
+!config/empresas/EJEMPLO-*.md
+config/google/
+config/correo/
+config/sistema/
+data/
+*.db
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Fuente cruda de credenciales por empresa — nunca versionar
+empresas actuales.xlsx
+
+# Permisos/config local de Claude Code -- específico de esta máquina, no del proyecto
+.claude/settings.local.json
+
+# Vault de Obsidian (notas personales del usuario en este mismo directorio) -- no es
+# parte del proyecto ni del código
+.obsidian/
+/*.base
+
+# Prototipo/borrador suelto, no referenciado por ningún código -- ver frontend/ para
+# la interfaz real
+axon.html
+
+# Archivos de depuración de una sesión anterior (listas de CUFEs de prueba) -- no los
+# usa ningún código, no deben viajar con el historial del repo
+scratch_cufes_*.json

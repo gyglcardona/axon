@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - reproduce el patrón real confirmado en facturas de
+     TECNOMEDICA MD y TORACHE (julio 2026, Hielo Super-Cool): cac:Price/
+     cbc:PriceAmount trae el precio unitario CON IVA incluido, mientras
+     LineExtensionAmount sí es el neto (sin impuestos). Usar Price tal cual
+     duplicaba el IVA: una vez metido en el precio del ítem, y otra vez en la
+     línea de IVA que agrega la política de empresa. -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT005</cbc:ID>
+  <cbc:IssueDate>2026-07-01</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO PRECIO CON IVA S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000005</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>378</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>450</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>378.00</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>BOLSA PLASTICA BIODEGRADABLE</cbc:Description></cac:Item>
+    <!-- Price viene CON IVA incluido (450), no neto (378): el bug real. -->
+    <cac:Price><cbc:PriceAmount>450.00</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>72.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>378.00</cbc:TaxableAmount>
+        <cbc:TaxAmount>72.00</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+</Invoice>

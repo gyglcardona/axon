@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - reproduce el patrón de Fase 0: TaxExclusiveAmount en
+     cero, con el dato real en LineExtensionAmount. -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT002</cbc:ID>
+  <cbc:IssueDate>2026-07-02</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO TAX0 S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000002</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>0</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>500000</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:TaxTotal>
+    <cbc:TaxAmount>0</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount>500000</cbc:TaxableAmount>
+      <cbc:TaxAmount>0</cbc:TaxAmount>
+      <cbc:Percent>0</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>500000</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Servicio excluido de IVA (fixture)</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>500000</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

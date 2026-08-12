@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - factura de compra con IVA discriminado normalmente en
+     el XML. Sirve para probar que la POLÍTICA de Hielo Super-Cool (ver
+     docs/02-reglas-negocio/politicas-empresa/901528790-hielo-super-cool-iva-no-discriminado.md)
+     mueve el IVA a un ítem adicional en vez de dejarlo en el bloque de impuestos. -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT003</cbc:ID>
+  <cbc:IssueDate>2026-07-03</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO NORMAL S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000003</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>2000000</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>2380000</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:TaxTotal>
+    <cbc:TaxAmount>380000</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount>2000000</cbc:TaxableAmount>
+      <cbc:TaxAmount>380000</cbc:TaxAmount>
+      <cbc:Percent>19</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>10</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>2000000</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Insumos de refrigeración (fixture)</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>200000</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE SINTÉTICO - reproduce el patrón real confirmado en facturas de
+     julio de Hielo Super-Cool (ej. GL30644, GLOBAL TOOLS S.A.S.): el
+     TaxTotal de nivel documento es la SUMA de los TaxTotal de cada línea,
+     no un impuesto adicional. Sirve para probar que la política de IVA no
+     discriminado no duplica el total (bug real: sumaba documento + líneas). -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>SINT004</cbc:ID>
+  <cbc:IssueDate>2026-07-24</cbc:IssueDate>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>PROVEEDOR SINTETICO MULTILINEA HIELO S.A.S.</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>900000004</cbc:CompanyID>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:TaxExclusiveAmount>34875</cbc:TaxExclusiveAmount>
+    <cbc:PayableAmount>41501</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <!-- TaxTotal de documento = SUMA de los TaxTotal de línea de abajo (958+1197+2698+942+830=6625) -->
+  <cac:TaxTotal>
+    <cbc:TaxAmount>6626</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount>34875</cbc:TaxableAmount>
+      <cbc:TaxAmount>6626</cbc:TaxAmount>
+      <cbc:Percent>19</cbc:Percent>
+      <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>5042</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>CORTA UÑAS GRANDE</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>5042</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>958</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>5042</cbc:TaxableAmount>
+        <cbc:TaxAmount>958</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>6303</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>LUBRICANTE MULTIUSOS CROMALUX</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>6303</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>1197</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>6303</cbc:TaxableAmount>
+        <cbc:TaxAmount>1197</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+
+  <cac:InvoiceLine>
+    <cbc:ID>3</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>14202</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>CORTAFRIO N 6 JUSTER ENCAUCHET</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>14202</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>2698</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>14202</cbc:TaxableAmount>
+        <cbc:TaxAmount>2698</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+
+  <cac:InvoiceLine>
+    <cbc:ID>4</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>4958</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>LLAVE MIXTA JUSTER N 13</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>4958</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>942</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>4958</cbc:TaxableAmount>
+        <cbc:TaxAmount>942</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+
+  <cac:InvoiceLine>
+    <cbc:ID>5</cbc:ID>
+    <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount>4370</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>LLAVE MIXTA VAN 1/2</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount>4370</cbc:PriceAmount></cac:Price>
+    <cac:TaxTotal>
+      <cbc:TaxAmount>830</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount>4370</cbc:TaxableAmount>
+        <cbc:TaxAmount>830</cbc:TaxAmount>
+        <cbc:Percent>19</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+  </cac:InvoiceLine>
+</Invoice>

@@ -1,0 +1,41 @@
+{
+  "_comentario": "Índice maestro. Claude y el CLI resuelven el nombre de una empresa contra este archivo antes de ejecutar cualquier comando.",
+  "empresas": [
+    {
+      "slug": "hielo-super-cool",
+      "nit": "901528790",
+      "nombre": "HIELO SUPER-COOL S.A.S.",
+      "config": "config/empresas/901528790.json"
+    },
+    {
+      "slug": "construcciones-y-adecuaciones-et",
+      "nit": "901292435",
+      "nombre": "CONSTRUCCIONES Y ADECUACIONES ET S.A.S.",
+      "config": "config/empresas/901292435.json"
+    },
+    {
+      "slug": "distribuidora-el-manantial-la-93",
+      "nit": "901985887",
+      "nombre": "DISTRIBUIDORA EL MANANTIAL LA 93 SAS",
+      "config": "config/empresas/901985887.json"
+    },
+    {
+      "slug": "ac-carpas-y-eventos",
+      "nit": "901954343",
+      "nombre": "AC CARPAS Y EVENTOS S.A.S.",
+      "config": "config/empresas/901954343.json"
+    },
+    {
+      "slug": "vitanex",
+      "nit": "902033312",
+      "nombre": "VITANEX S.A.S",
+      "config": "config/empresas/902033312.json"
+    },
+    {
+      "slug": "nabor-abad-garcia-hoyos",
+      "nit": "70829323",
+      "nombre": "NABOR ABAD GARCIA HOYOS",
+      "config": "config/empresas/70829323.json"
+    }
+  ]
+}
