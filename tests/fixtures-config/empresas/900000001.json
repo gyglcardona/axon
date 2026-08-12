@@ -1,0 +1,15 @@
+{
+  "nit": "900000001",
+  "nombre": "EMPRESA DE PRUEBA S.A.S.",
+  "slug": "empresa-de-prueba",
+  "politicas": {
+    "iva_no_discriminado": {
+      "activa": true,
+      "descripcion_md": "docs/02-reglas-negocio/politicas-empresa/EJEMPLO-800111222-iva-no-discriminado.md",
+      "comportamiento": {
+        "accion": "mover_iva_a_item",
+        "descripcion_item": "IVA"
+      }
+    }
+  }
+}

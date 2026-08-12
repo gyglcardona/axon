@@ -13,7 +13,8 @@ from dian_parser import parsear_factura  # noqa: E402
 from motor_reglas import clasificar_factura  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures-sinteticos"
-CONFIG_DIR = Path(__file__).parent.parent / "config"
+CONFIG_DIR = Path(__file__).parent / "fixtures-config"
+NIT_EMPRESA_PRUEBA = "900000001"  # ver tests/fixtures-config/empresas/900000001.json
 
 
 def _leer(nombre: str) -> bytes:
@@ -23,7 +24,7 @@ def _leer(nombre: str) -> bytes:
 def test_politica_iva_no_discriminado_mueve_el_iva_a_un_item():
     factura = parsear_factura(_leer("iva-no-discriminado-hielo-super-cool.xml"))
 
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     # La línea original no debe llevar impuestos.
     item_original = next(i for i in resultado.items if i.origen == "xml")
@@ -51,7 +52,7 @@ def test_politica_iva_no_discriminado_no_duplica_el_iva_en_factura_multilinea():
     $6.626, el doble exacto)."""
     factura = parsear_factura(_leer("iva-no-discriminado-multilinea-hielo.xml"))
 
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     item_iva = next(i for i in resultado.items if i.origen == "politica_empresa")
     # Suma exacta de líneas (958+1197+2698+942+830=6625) -- NO 13251 (el doble,
@@ -67,7 +68,7 @@ def test_politica_iva_no_discriminado_no_duplica_con_precio_con_iva_incluido():
     agrega la política)."""
     factura = parsear_factura(_leer("precio-con-iva-incluido.xml"))
 
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     item_gasto = next(i for i in resultado.items if i.origen == "xml")
     item_iva = next(i for i in resultado.items if i.origen == "politica_empresa")
@@ -157,6 +158,6 @@ def test_resuelto_por_es_manual_mientras_falte_cuenta_contable():
     predictor_manager.py en el prototipo anterior) -- hasta que exista,
     todo debe quedar honestamente marcado como 'manual', nunca 'reglas'."""
     factura = parsear_factura(_leer("iva-no-discriminado-hielo-super-cool.xml"))
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     assert resultado.resuelto_por == "manual"

@@ -1,0 +1,36 @@
+name: Desplegar a producción
+
+# Corre pruebas en cada push a main; solo si pasan, se conecta al VPS y
+# actualiza lo que está corriendo (git pull + reinicio del servicio) -- ver
+# docs/09-despliegue/plan-despliegue.md sección 4. Antes de esto, el
+# despliegue era manual (entrar por SSH a mano tras cada cambio).
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+      - run: pytest tests/ -q
+
+  desplegar:
+    needs: pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/axon
+            git pull origin main
+            sudo systemctl restart axon

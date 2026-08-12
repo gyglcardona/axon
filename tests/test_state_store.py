@@ -19,17 +19,18 @@ from zip_handler import DocumentoDuplicado, DocumentoConError, DocumentoNoFactur
 import state_store  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures-sinteticos"
-CONFIG_DIR = Path(__file__).parent.parent / "config"
+CONFIG_DIR = Path(__file__).parent / "fixtures-config"
+NIT_EMPRESA_PRUEBA = "900000001"  # ver tests/fixtures-config/empresas/900000001.json
 
 
 def _resultado_clasificado(cufe: str):
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
     factura.cufe = cufe  # el fixture sintético no trae CUFE real
-    return clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    return clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
 
 def test_guardar_y_leer_una_compra(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     resultado = _resultado_clasificado("CUFE-TEST-001")
 
     compra_id = state_store.guardar_resultado(conn, resultado, archivo_origen=Path("data/entrada-dian/x.zip"))
@@ -53,7 +54,7 @@ def test_guardar_y_leer_una_compra(tmp_path):
 
 
 def test_no_permite_cufe_duplicado_entre_corridas(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     state_store.guardar_resultado(conn, _resultado_clasificado("CUFE-REPETIDO"), Path("uno.zip"))
 
     assert state_store.ya_existe_cufe(conn, "CUFE-REPETIDO") is True
@@ -75,7 +76,7 @@ def test_bases_de_datos_separadas_por_empresa(tmp_path):
 
 
 def test_registrar_descartado_duplicado_y_error(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
 
     state_store.registrar_descartado(conn, DocumentoDuplicado(
         cufe="CUFE-X", origen=Path("dos.zip"), origen_primera_aparicion=Path("uno.zip"),
@@ -131,7 +132,7 @@ def test_migracion_agrega_columnas_a_base_ya_existente(tmp_path):
 
 
 def test_eliminar_compras_borra_factura_detalle_e_impuestos(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     compra_id = state_store.guardar_resultado(conn, _resultado_clasificado("CUFE-BORRAR"), Path("x.zip"))
 
     total = state_store.eliminar_compras(conn, ["CUFE-BORRAR"])
@@ -146,7 +147,7 @@ def test_eliminar_compras_borra_factura_detalle_e_impuestos(tmp_path):
 
 
 def test_eliminar_compras_no_afecta_otras_facturas(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     state_store.guardar_resultado(conn, _resultado_clasificado("CUFE-A"), Path("a.zip"))
     state_store.guardar_resultado(conn, _resultado_clasificado("CUFE-B"), Path("b.zip"))
 
@@ -158,12 +159,12 @@ def test_eliminar_compras_no_afecta_otras_facturas(tmp_path):
 
 
 def test_eliminar_compras_lista_vacia_no_hace_nada(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     assert state_store.eliminar_compras(conn, []) == 0
 
 
 def test_preferencia_aprendida_upsert_y_lectura(tmp_path):
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
 
     assert state_store.obtener_preferencia_aprendida(conn, "cuenta_contable", "900111", "TORNILLOS") is None
 
@@ -180,7 +181,7 @@ def test_preferencia_aprendida_cabecera_con_none_no_se_duplica(tmp_path):
     SQLite no considera iguales dos NULL para el UNIQUE y cada llamada
     insertaría una fila nueva en vez de actualizar (ver el docstring de
     guardar_preferencia_aprendida)."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
 
     state_store.guardar_preferencia_aprendida(conn, "medio_pago_id", "900111", None, "10")
     state_store.guardar_preferencia_aprendida(conn, "medio_pago_id", "900111", None, "20")
@@ -196,7 +197,7 @@ def test_registrar_descartado_no_se_duplica_al_reimportar_la_misma_carpeta(tmp_p
     """Si se corre `importar` dos veces sobre la misma carpeta (ej. el usuario
     la vuelve a correr por error), el log de auditoría no debe duplicarse --
     solo `compras` necesita bloquear duro, esto es solo trazabilidad."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     descarte = DocumentoDuplicado(cufe="CUFE-X", origen=Path("dos.zip"), origen_primera_aparicion=Path("uno.zip"))
 
     state_store.registrar_descartado(conn, descarte)

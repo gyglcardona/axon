@@ -17,7 +17,8 @@ from dian_parser import parsear_factura  # noqa: E402
 from motor_reglas import clasificar_factura  # noqa: E402
 
 FIXTURES = Path(__file__).parent / "fixtures-sinteticos"
-CONFIG_DIR = Path(__file__).parent.parent / "config"
+CONFIG_DIR = Path(__file__).parent / "fixtures-config"
+NIT_EMPRESA_PRUEBA = "900000001"  # ver tests/fixtures-config/empresas/900000001.json
 
 
 def _clasificacion_sin_cuenta():
@@ -149,9 +150,9 @@ def test_iva_no_discriminado_hereda_cuenta_de_la_linea_de_gasto(tmp_path):
     inyectado por la política de empresa nunca debe llevar una cuenta fija
     propia -- debe heredar la misma cuenta que la línea de gasto real de ese
     mismo documento, una vez que esa línea la resuelve el histórico."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
     descripcion_linea = next(i for i in resultado.items if i.origen == "xml").descripcion
     proveedor_nit = resultado.factura.proveedor_nit
 
@@ -174,10 +175,10 @@ def test_iva_no_discriminado_nunca_recibe_iva_ni_retencion(tmp_path):
     """La política dice literalmente 'sin impuestos asociados a este ítem'
     -- antes de este fix, sugerir_item le clavaba 'IVA 0%' porque
     item.impuestos venía vacío (así se diseñó la política a propósito)."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     state_store.guardar_catalogo_siigo(conn, "taxes", [{"id": 14139, "name": "IVA 0%", "type": "IVA", "percentage": 0}])
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     orquestador._aplicar_sugerencias(conn, resultado)
 
@@ -196,9 +197,9 @@ def test_iva_no_discriminado_la_linea_xml_tampoco_recibe_iva_tax_id_del_historic
     Eso duplicaba el IVA: una vez en el ítem 'IVA', otra vez en esta línea.
     La cuenta contable sí debe seguir resolviéndose por histórico -- el fix
     es específico a iva_tax_id, no a todo el resto de la sugerencia."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
     descripcion_linea = next(i for i in resultado.items if i.origen == "xml").descripcion
     proveedor_nit = resultado.factura.proveedor_nit
 
@@ -226,9 +227,9 @@ def test_iva_no_discriminado_no_hereda_cuenta_si_la_linea_de_gasto_no_resuelve(t
     """Caso real confirmado (K01218074, julio 2026): si la línea de gasto
     sigue sin cuenta, el ítem de IVA tampoco debe quedar con una cuenta --
     nunca cae de vuelta a un valor fijo genérico."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
 
     orquestador._aplicar_sugerencias(conn, resultado)
 
@@ -240,9 +241,9 @@ def test_ya_resuelto_por_reglas_no_se_degrada(tmp_path):
     """Si motor_reglas ya dejó todas las cuentas llenas (regla de negocio
     real), _aplicar_sugerencias no debe tocar resuelto_por -- debe seguir
     siendo "reglas", nunca bajar a "historico"."""
-    conn = state_store.conectar("901528790", base_dir=tmp_path)
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     factura = parsear_factura((FIXTURES / "iva-no-discriminado-hielo-super-cool.xml").read_bytes())
-    resultado = clasificar_factura(factura, nit_empresa="901528790", config_dir=CONFIG_DIR)
+    resultado = clasificar_factura(factura, nit_empresa=NIT_EMPRESA_PRUEBA, config_dir=CONFIG_DIR)
     for item in resultado.items:
         item.cuenta_contable = "CUENTA-YA-CONFIRMADA"
     resultado.resuelto_por = "reglas"
