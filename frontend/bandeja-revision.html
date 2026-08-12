@@ -1810,6 +1810,7 @@ function renderDetail(){
       : it.origen === 'otros_impuestos' ? '(impuestos del XML sin código Siigo -- agrupados aquí)' : '';
     div.innerHTML = `
       <div class="li-desc">${it.descripcion}${notaInyeccion ? ` <span style="font-weight:400;color:var(--ink-mute);">${notaInyeccion}</span>` : ''}</div>
+      ${empresaUsaSiigo() ? `
       <div class="li-row"><span class="li-label">Cuenta</span>
         <span style="display:flex; align-items:center; gap:4px;">
           ${mostrarReplicar ? `<button type="button" class="li-replicar" data-campo="cuenta_contable" title="Copia la cuenta de esta línea a todas las demás del documento">${textoReplicar}</button>` : ''}
@@ -1822,7 +1823,6 @@ function renderDetail(){
           </span>
         </span>
       </div>
-      ${empresaUsaSiigo() ? `
       <div class="li-row"><span class="li-label">IVA</span>
         <span style="display:flex; align-items:center; gap:4px;">
           ${mostrarReplicar ? `<button type="button" class="li-replicar" data-campo="iva_tax_id" title="Copia el IVA de esta línea a todas las demás del documento">${textoReplicar}</button>` : ''}
