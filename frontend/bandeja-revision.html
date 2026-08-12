@@ -1869,7 +1869,7 @@ function renderDetail(){
   totales.innerHTML = `
     <div class="t-row"><span>Subtotal</span><span class="num">${formatCOP(f.subtotal_xml)}</span></div>
     <div class="t-row"><span>Impuestos y retenciones (según XML, informativo)</span><span class="num">${formatCOP(totalImpuestosXml)}</span></div>
-    <div class="t-row"><span>Impuestos adjuntos a los ítems (van a Siigo así)</span><span class="num">${formatCOP(impuestosAdjuntos)}</span></div>
+    <div class="t-row"><span>Impuestos adjuntos a los ítems${empresaUsaSiigo() ? ' (van a Siigo así)' : ''}</span><span class="num">${formatCOP(impuestosAdjuntos)}</span></div>
     <div class="t-row total"><span>Total factura</span><span class="num">${formatCOP(f.total_pagar_xml)}</span></div>
     ${hayItemInyectado ? `<div class="alert info" style="margin-top:10px;"><i>ℹ</i><span>Esta empresa tiene una política que mueve el IVA a un ítem aparte (ver arriba) -- por eso "impuestos adjuntos" no incluye el IVA: va como <b>valor del ítem</b>, no como impuesto, y la retención (si la factura trae) nunca se adjunta a ningún ítem en ningún caso.</span></div>` : ''}
   `;
