@@ -9,6 +9,7 @@ usuario, ver el plan de la sesión.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -16,7 +17,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import auth_store
 import correo
 
-URL_BASE = "http://localhost:5000"  # TODO: configurable cuando exista un dominio propio
+# Mismo mecanismo que google_conexiones.REDIRECT_URI: en producción el
+# servicio systemd define AXON_BASE_URL=https://axonweb.lat (ver
+# docs/09-despliegue/plan-despliegue.md); sin esa variable (desarrollo
+# local) se usa localhost, igual que antes. Bug real confirmado en
+# producción (agosto 2026): mientras esto quedó hardcodeado a localhost,
+# TODO enlace de invitación/registro/recuperación de contraseña enviado por
+# correo era inválido para cualquiera que no fuera el propio servidor.
+URL_BASE = os.environ.get("AXON_BASE_URL", "http://localhost:5000").rstrip("/")
 
 
 class AuthError(Exception):
