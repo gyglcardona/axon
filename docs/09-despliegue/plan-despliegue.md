@@ -187,13 +187,27 @@ deja una base a medio migrar.
 
 ## 5. Backups (no negociable, es software contable)
 
-- **Backup diario automático** de `data/` completo (todas las `.db` + los XML/ZIP
-  originales en `entrada-dian/`) hacia almacenamiento *fuera* del VPS — un bucket S3
-  compatible (Backblaze B2 o el propio Object Storage de Hetzner, ambos baratos) vía
-  `rclone` en un cron nocturno. Si el VPS se pierde completamente, los datos no.
-  - `data/sistema.db` (usuarios/sesiones) entra en el mismo backup.
-- Retención sugerida: 30 días diarios + 12 meses de snapshot mensual — barato en
-  almacenamiento de objetos (unos pocos GB en total a este volumen de facturas).
+**Implementado 2026-08-12.** Backup diario automático de `data/` completo (todas las
+`.db` por empresa + `sistema.db` + los XML/ZIP/PDF originales en `entrada-dian/`) y de
+`config/` (credenciales y configuración por empresa), hacia **Backblaze B2**
+(bucket privado `axonweb-lat-backups`, región EU Central — misma región que el VPS,
+Falkenstein — cifrado del lado del servidor activado). Cae dentro del plan gratis de
+B2 (10GB) por años al ritmo de crecimiento actual (~78MB en agosto 2026).
+
+- `src/backup_a_b2.py`: arma el paquete (las bases SQLite se copian con la API de
+  backup de `sqlite3`, nunca una copia de archivo directa, para no capturar una
+  escritura a medias mientras gunicorn sigue atendiendo peticiones), lo sube con
+  `rclone` (remoto `b2`, configurado en `~/.config/rclone/rclone.conf` del usuario
+  `axon` en el servidor — nunca en este repo, ver regla 4 de `CLAUDE.md`), y poda lo
+  vencido.
+- Corre por `axon-backup.timer` (systemd, mismo patrón que `axon.service`) todas las
+  noches a las 08:00 UTC (~3am hora Colombia). `Persistent=true`: si el VPS estaba
+  apagado a esa hora, corre apenas vuelve a encender.
+- Retención: 30 diarios (`diario/`) + 12 mensuales, el del día 1 de cada mes
+  (`mensual/`) — podada automáticamente en cada corrida, no hace falta cron aparte.
+- Verificado de punta a punta el 2026-08-12: backup real subido, descargado de
+  vuelta, `PRAGMA integrity_check` en las 7 bases dio `ok`, y el conteo de archivos
+  de `entrada-dian` restaurados coincidió exacto con el original (1014 = 1014).
 - El snapshot administrado del proveedor (mencionado en la sección 2) es un respaldo
   *adicional*, no el principal — un snapshot vive en la misma cuenta/proveedor que el
   servidor, así que no protege contra un problema de facturación o de cuenta.
