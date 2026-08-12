@@ -182,6 +182,30 @@ def test_fijar_password_con_token_de_invitacion(client):
     assert r_login.status_code == 200
 
 
+def test_fijar_password_limpia_una_sesion_previa_de_otra_cuenta(client):
+    """Bug real confirmado 2026-08: una empresa recién autorregistrada fijó
+    su contraseña desde el enlace del correo, pero el navegador ya tenía una
+    sesión activa de OTRA cuenta (ej. alguien probando con su propia cuenta
+    de superusuario en la misma pestaña) -- sin limpiar la sesión vieja, la
+    app seguía mostrando todo como esa cuenta anterior (llegó a ver la
+    conexión de Google de una empresa ajena). `fijar-password` debe dejar al
+    navegador sin sesión, para que solo quede autenticado quien haga login
+    explícito con las credenciales nuevas."""
+    _crear_usuario("viejo@otra-empresa.com", "empresa", password="ClaveVieja123")
+    client.post("/api/auth/login", json={"email": "viejo@otra-empresa.com", "password": "ClaveVieja123"})
+    assert client.get("/api/auth/yo").status_code == 200  # sesión vieja activa
+
+    usuario_id = _crear_usuario("nuevo@empresa.com", "empresa")
+    conn = auth_store.conectar()
+    token = auth_store.crear_token(conn, usuario_id, "invitacion")
+    conn.close()
+
+    r_fijar = client.post("/api/auth/fijar-password", json={"token": token, "password": "NuevaClave123"})
+    assert r_fijar.status_code == 200
+
+    assert client.get("/api/auth/yo").status_code == 401  # la sesión vieja ya no sirve
+
+
 def test_olvide_password_siempre_responde_200_exista_o_no_el_correo(client):
     assert client.post("/api/auth/olvide-password", json={"email": "nadie@x.com"}).status_code == 200
     _crear_usuario("si-existe@x.com", "empresa", password="ClaveSegura123")

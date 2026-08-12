@@ -282,6 +282,14 @@ def api_fijar_password():
         return jsonify({"error": str(e)}), 400
     finally:
         conn.close()
+    # Si el navegador ya tenía una sesión activa de OTRA cuenta (ej. alguien
+    # invitado que ya usa AXON para otra empresa, o quien está probando con
+    # su propia cuenta de superusuario en la misma pestaña), sin esto el
+    # usuario sigue viendo la app como esa cuenta vieja después de fijar su
+    # contraseña nueva -- bug real confirmado 2026-08 (una empresa recién
+    # autorregistrada veía la conexión de Google de otra empresa, porque en
+    # realidad seguía logueado como el superusuario que la había creado).
+    session.clear()
     return jsonify({"guardado": True})
 
 
