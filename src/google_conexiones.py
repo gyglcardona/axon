@@ -28,6 +28,7 @@ docs/03-ingesta-dian/conexion-google.md para los pasos manuales exactos.
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -51,7 +52,11 @@ CONEXIONES_DIR = GOOGLE_DIR / "conexiones"
 REGISTRO_PATH = CONEXIONES_DIR / "registro.json"
 PENDIENTES_PATH = GOOGLE_DIR / "oauth_pendientes.json"
 
-REDIRECT_URI = "http://localhost:5000/oauth/google/callback"
+# En producción, el servicio systemd define AXON_BASE_URL=https://axonweb.lat
+# (ver docs/09-despliegue/plan-despliegue.md); sin esa variable (desarrollo local)
+# se usa localhost, igual que antes.
+BASE_URL = os.environ.get("AXON_BASE_URL", "http://localhost:5000").rstrip("/")
+REDIRECT_URI = f"{BASE_URL}/oauth/google/callback"
 ESTADO_VIGENCIA_MINUTOS = 30
 
 CONEXION_LEGACY = "legacy"
