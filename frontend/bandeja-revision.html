@@ -224,6 +224,15 @@
     transition:border-color .15s, box-shadow .15s;
   }
   .auth-field input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); outline:none;}
+  .auth-field-pw{position:relative;}
+  .auth-field-pw input{padding-right:40px;}
+  .auth-pw-toggle{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:28px; height:28px; padding:0; border:none; background:transparent; border-radius:6px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-mute);
+  }
+  .auth-pw-toggle:hover{color:var(--ink); background:var(--panel-sunken);}
+  .auth-pw-toggle svg{width:18px; height:18px;}
   .auth-submit{
     width:100%; border:none; border-radius:9px; padding:11px; font:inherit; font-size:13.5px; font-weight:600;
     color:#fff; background:var(--accent); cursor:pointer; transition:background .15s, transform .1s;
@@ -1016,7 +1025,12 @@
     </div>
     <div class="auth-field">
       <label for="loginPassword">Contraseña</label>
-      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+      <div class="auth-field-pw">
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+        <button type="button" class="auth-pw-toggle" id="loginPasswordToggle" tabindex="-1" title="Mostrar contraseña" aria-label="Mostrar contraseña">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <div class="auth-resultado" id="loginResultado"></div>
     <button class="auth-submit" id="loginEntrar">Entrar</button>
@@ -1435,12 +1449,17 @@ async function cargarCatalogosParaSelects(slug, forzar){
 async function seleccionarEmpresa(slug){
   estado.empresaSlug = slug;
   estado.filtro = 'todas'; estado.busqueda = ''; estado.filtroEstado = '';
-  estado.fechaDesde = ''; estado.fechaHasta = '';
+  // Por defecto, el mes en curso -- mismo criterio que "Compras en Siigo" y
+  // "Movimientos Contai" (ver cambiarVista): evita cargar años de historial
+  // de una vez y da un punto de partida útil para la revisión mensual.
+  const hoy = new Date();
+  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  estado.fechaDesde = fechaISO(inicioMes); estado.fechaHasta = fechaISO(hoy);
   const buscador = document.getElementById('buscador');
   if(buscador) buscador.value = '';
-  document.getElementById('fechaDesde').value = ''; document.getElementById('fechaHasta').value = '';
+  document.getElementById('fechaDesde').value = estado.fechaDesde; document.getElementById('fechaHasta').value = estado.fechaHasta;
   document.getElementById('filtroEstado').value = '';
-  document.getElementById('limpiarFechas').style.display = 'none';
+  actualizarBotonLimpiarFechas();
   estado.seleccionadas.clear(); estado.abierta = null;
   document.getElementById('companyMenu').classList.remove('open');
   document.getElementById('topSub').textContent = 'Cargando facturas…';
@@ -4292,6 +4311,20 @@ document.getElementById('loginEntrar').addEventListener('click', intentarLogin);
 document.getElementById('loginPassword').addEventListener('keydown', (ev) => {
   if(ev.key === 'Enter') intentarLogin();
 });
+const ICONO_OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICONO_OJO_TACHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a20.3 20.3 0 0 1-3.06 4.34"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+function activarTogglePassword(inputId, btnId){
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  btn.addEventListener('click', () => {
+    const mostrando = input.type === 'text';
+    input.type = mostrando ? 'password' : 'text';
+    btn.innerHTML = mostrando ? ICONO_OJO : ICONO_OJO_TACHADO;
+    btn.title = mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña';
+    btn.setAttribute('aria-label', btn.title);
+  });
+}
+activarTogglePassword('loginPassword', 'loginPasswordToggle');
 document.getElementById('loginOlvideLink').addEventListener('click', (ev) => {
   ev.preventDefault();
   mostrarPanelOlvide();
