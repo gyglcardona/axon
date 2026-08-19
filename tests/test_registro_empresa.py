@@ -189,6 +189,105 @@ def test_registro_genera_slugs_unicos_cuando_el_nombre_se_repite(entorno_registr
     assert resultado2["slug"] == "distribuidora-central-2"
 
 
+# --- orquestador.crear_empresa_administrada ---
+
+def _crear_actor(entorno, email, rol, puede_crear_usuarios=False):
+    conn = auth_store.conectar(base_dir=entorno["tmp_path"])
+    try:
+        usuario_id = auth_store.crear_usuario(conn, email, rol, puede_crear_usuarios)
+        return auth_store.obtener_usuario_por_id(conn, usuario_id)
+    finally:
+        conn.close()
+
+
+def test_crear_empresa_administrada_sin_permiso_da_error(entorno_registro):
+    auxiliar = _crear_actor(entorno_registro, "aux@firma.com", "contador", puede_crear_usuarios=False)
+    with pytest.raises(auth.AuthError, match="permiso"):
+        orquestador.crear_empresa_administrada("900123456", "Empresa Nueva", "cliente@empresa.com", auxiliar)
+    assert _leer_registro(entorno_registro["registro"])["empresas"] == []
+
+
+def test_crear_empresa_administrada_superusuario_no_queda_autoasociado(entorno_registro):
+    """El superusuario ya ve todas las empresas por diseño -- no necesita
+    (ni debe acumular) una fila de asociación explícita por cada una."""
+    super_usuario = _crear_actor(entorno_registro, "admin@axon.com", "superusuario")
+
+    resultado = orquestador.crear_empresa_administrada(
+        "900123456", "Empresa Nueva S.A.S.", "cliente@empresa.com", super_usuario,
+    )
+
+    assert resultado == {"creado": True, "slug": "empresa-nueva-s-a-s", "nit": "900123456"}
+    conn = auth_store.conectar(base_dir=entorno_registro["tmp_path"])
+    try:
+        assert auth_store.listar_nits_de_usuario(conn, super_usuario["id"]) == []
+        dueno = auth_store.obtener_usuario_por_email(conn, "cliente@empresa.com")
+        assert dueno["rol"] == "empresa"
+        assert dueno["password_hash"] is None
+        assert dueno["creado_por_usuario_id"] == super_usuario["id"]
+        assert auth_store.listar_nits_de_usuario(conn, dueno["id"]) == ["900123456"]
+    finally:
+        conn.close()
+
+
+def test_crear_empresa_administrada_contador_queda_autoasociado(entorno_registro):
+    """Pedido explícito del usuario: si un contador crea la empresa, debe
+    quedarle asignada a él también -- para que otros contadores sin
+    asociación explícita no la vean."""
+    contador = _crear_actor(entorno_registro, "contador@firma.com", "contador", puede_crear_usuarios=True)
+
+    orquestador.crear_empresa_administrada("900123456", "Empresa Nueva", "cliente@empresa.com", contador)
+
+    conn = auth_store.conectar(base_dir=entorno_registro["tmp_path"])
+    try:
+        assert auth_store.listar_nits_de_usuario(conn, contador["id"]) == ["900123456"]
+        dueno = auth_store.obtener_usuario_por_email(conn, "cliente@empresa.com")
+        assert dueno["creado_por_usuario_id"] == contador["id"]
+    finally:
+        conn.close()
+
+
+def test_crear_empresa_administrada_otro_contador_no_ve_la_empresa_ajena(entorno_registro):
+    contador_a = _crear_actor(entorno_registro, "a@firma.com", "contador", puede_crear_usuarios=True)
+    contador_b = _crear_actor(entorno_registro, "b@firma.com", "contador", puede_crear_usuarios=True)
+
+    orquestador.crear_empresa_administrada("900123456", "Empresa de A", "cliente@empresa.com", contador_a)
+
+    conn = auth_store.conectar(base_dir=entorno_registro["tmp_path"])
+    try:
+        assert auth_store.listar_nits_de_usuario(conn, contador_b["id"]) == []
+    finally:
+        conn.close()
+
+
+def test_crear_empresa_administrada_envia_invitacion_al_correo_del_cliente_no_al_del_creador(entorno_registro):
+    contador = _crear_actor(entorno_registro, "contador@firma.com", "contador", puede_crear_usuarios=True)
+
+    orquestador.crear_empresa_administrada("900123456", "Empresa Nueva", "cliente@empresa.com", contador)
+
+    assert len(entorno_registro["enviados"]) == 1
+    assert entorno_registro["enviados"][0]["destinatario"] == "cliente@empresa.com"
+
+
+def test_crear_empresa_administrada_sin_limite_de_intentos_por_correo(entorno_registro):
+    """A diferencia de `registrar_empresa_nueva`, no hay freno anti-abuso --
+    quien llama ya pasó por login y por el chequeo de permiso, no es un
+    formulario público anónimo."""
+    contador = _crear_actor(entorno_registro, "contador@firma.com", "contador", puede_crear_usuarios=True)
+    for n in range(1, orquestador.LIMITE_INTENTOS_REGISTRO_EMPRESA + 3):
+        orquestador.crear_empresa_administrada(
+            f"90000{n:04d}", f"Empresa {n}", f"cliente{n}@empresa.com", contador,
+        )
+    datos = _leer_registro(entorno_registro["registro"])
+    assert len(datos["empresas"]) == orquestador.LIMITE_INTENTOS_REGISTRO_EMPRESA + 2
+
+
+def test_crear_empresa_administrada_rechaza_nit_duplicado(entorno_registro):
+    contador = _crear_actor(entorno_registro, "contador@firma.com", "contador", puede_crear_usuarios=True)
+    orquestador.crear_empresa_administrada("900123456", "Primera", "uno@empresa.com", contador)
+    with pytest.raises(ValueError, match="Ya existe una empresa registrada"):
+        orquestador.crear_empresa_administrada("900123456", "Segunda", "dos@empresa.com", contador)
+
+
 # --- orquestador.eliminar_empresa ---
 
 def test_eliminar_empresa_borra_registro_config_md_y_base_de_datos(entorno_registro):

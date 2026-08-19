@@ -175,6 +175,19 @@ def api_invitar():
     return jsonify(_usuario_publico(nuevo))
 
 
+@app.post("/api/auth/crear-empresa")
+@requiere_login
+def api_crear_empresa():
+    data = request.get_json(silent=True) or {}
+    try:
+        resultado = orquestador.crear_empresa_administrada(
+            data.get("nit", ""), data.get("razon_social", ""), data.get("email", ""), g.usuario,
+        )
+    except (auth.AuthError, ValueError, correo.CorreoError) as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(resultado)
+
+
 @app.get("/api/auth/usuarios")
 @requiere_login
 def api_listar_usuarios():

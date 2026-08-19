@@ -464,7 +464,6 @@
         <div class="nav-item" id="navPlanCuentas"><span class="dot"></span> Plan de cuentas</div>
         <div class="nav-item" id="navCatalogosSiigo"><span class="dot"></span> Datos maestros Siigo</div>
         <div class="nav-item" id="navDatosContai" style="display:none;"><span class="dot"></span> Datos maestros Contai</div>
-        <div class="nav-item disabled"><span class="dot"></span> Reglas por proveedor <span class="nav-soon">pronto</span></div>
         <div class="nav-item" id="navConfiguracion"><span class="dot"></span> Configuración</div>
       </div>
     </div>
@@ -1013,7 +1012,10 @@
         <h3>Usuarios</h3>
         <p class="modal-sub" style="margin-bottom:0;">Solo ves y administras los usuarios que tú mismo invitaste (un auxiliar que invites no podrá a su vez invitar a nadie más) -- si eres superusuario, ves a todos.</p>
       </div>
-      <button class="btn primary" id="usrAbrirInvitar" style="white-space:nowrap; flex-shrink:0;">Invitar usuario</button>
+      <div style="display:flex; gap:8px; flex-shrink:0;">
+        <button class="btn" id="usrAbrirCrearEmpresa" style="white-space:nowrap;">Crear empresa</button>
+        <button class="btn primary" id="usrAbrirInvitar" style="white-space:nowrap;">Invitar usuario</button>
+      </div>
     </div>
     <div class="modal-resultado" id="usrResultado"></div>
     <div style="display:flex; gap:8px; margin-top:10px;">
@@ -1039,6 +1041,30 @@
     </div>
     <div class="modal-actions" style="margin-top:12px;">
       <button class="btn" id="usrCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalCrearEmpresa">
+  <div class="modal" style="width:min(480px,94vw);">
+    <h3>Crear empresa</h3>
+    <p class="modal-sub">Para cuando tú das de alta al cliente en vez de que se autorregistre -- no necesitas acceso a su correo: el enlace para fijar la contraseña le llega directo a él, lo usa cuando quiera.</p>
+    <div class="campo">
+      <label class="modal-label">Razón social</label>
+      <input type="text" id="ceRazonSocial" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label class="modal-label">NIT</label>
+      <input type="text" id="ceNit" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="campo">
+      <label class="modal-label">Correo de la empresa</label>
+      <input type="email" id="ceEmail" autocomplete="off">
+    </div>
+    <div class="modal-resultado" id="ceResultado"></div>
+    <div class="modal-actions">
+      <button class="btn" id="ceCancelar">Cancelar</button>
+      <button class="btn primary" id="ceCrear">Crear empresa</button>
     </div>
   </div>
 </div>
@@ -2790,11 +2816,15 @@ function poblarFiltrosUsuarios(){
     selRol.insertAdjacentHTML('beforeend',
       Object.entries(ETIQUETAS_ROL).map(([valor, etiqueta]) => `<option value="${valor}">${etiqueta}</option>`).join(''));
   }
+  // A diferencia de los roles (fijos), la lista de empresas crece -- por
+  // ejemplo justo después de crear una desde este mismo modal -- así que
+  // se reconstruye siempre, no solo la primera vez, conservando lo
+  // seleccionado si sigue existiendo.
   const selEmpresa = document.getElementById('usrFiltroEmpresa');
-  if(selEmpresa.options.length === 1){
-    selEmpresa.insertAdjacentHTML('beforeend',
-      estado.empresas.map(e => `<option value="${e.nit}">${e.nombre}</option>`).join(''));
-  }
+  const nitSeleccionado = selEmpresa.value;
+  selEmpresa.innerHTML = '<option value="">Todas las empresas</option>' +
+    estado.empresas.map(e => `<option value="${e.nit}">${e.nombre}</option>`).join('');
+  selEmpresa.value = nitSeleccionado;
 }
 
 function aplicarFiltrosUsuarios(){
@@ -2939,6 +2969,17 @@ async function abrirModalUsuarios(){
 }
 function cerrarModalUsuarios(){
   document.getElementById('modalUsuarios').classList.remove('show');
+}
+
+function abrirModalCrearEmpresa(){
+  document.getElementById('ceRazonSocial').value = '';
+  document.getElementById('ceNit').value = '';
+  document.getElementById('ceEmail').value = '';
+  document.getElementById('ceResultado').textContent = '';
+  document.getElementById('modalCrearEmpresa').classList.add('show');
+}
+function cerrarModalCrearEmpresa(){
+  document.getElementById('modalCrearEmpresa').classList.remove('show');
 }
 
 function abrirModalInvitarUsuario(){
@@ -3739,6 +3780,33 @@ document.getElementById('usrFiltroEmail').addEventListener('input', aplicarFiltr
 document.getElementById('usrFiltroRol').addEventListener('change', aplicarFiltrosUsuarios);
 document.getElementById('usrFiltroEstado').addEventListener('change', aplicarFiltrosUsuarios);
 document.getElementById('usrFiltroEmpresa').addEventListener('change', aplicarFiltrosUsuarios);
+document.getElementById('usrAbrirCrearEmpresa').addEventListener('click', abrirModalCrearEmpresa);
+document.getElementById('ceCancelar').addEventListener('click', cerrarModalCrearEmpresa);
+document.getElementById('ceCrear').addEventListener('click', async () => {
+  const razon_social = document.getElementById('ceRazonSocial').value.trim();
+  const nit = document.getElementById('ceNit').value.trim();
+  const email = document.getElementById('ceEmail').value.trim();
+  const btn = document.getElementById('ceCrear');
+  const resultadoEl = document.getElementById('ceResultado');
+  if(!razon_social || !nit || !email){
+    resultadoEl.innerHTML = '<span style="color:var(--st-error)">Razón social, NIT y correo son obligatorios.</span>';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Creando…';
+  resultadoEl.textContent = '';
+  try{
+    const r = await apiPost('/api/auth/crear-empresa', {razon_social, nit, email});
+    toast(`${razon_social} creada -- se le envió el enlace de invitación a ${email}.`);
+    cerrarModalCrearEmpresa();
+    estado.empresas = await apiGet('/api/empresas');
+    poblarFiltrosUsuarios();
+    await cargarTablaUsuarios();
+  }catch(e){
+    resultadoEl.innerHTML = `<span style="color:var(--st-error)">${e.message}</span>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Crear empresa';
+  }
+});
 document.getElementById('invCancelar').addEventListener('click', cerrarModalInvitarUsuario);
 document.getElementById('invRol').addEventListener('change', () => {
   // ver auth.invitar_usuario -- todo contador invitado por un superusuario

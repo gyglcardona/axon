@@ -91,6 +91,28 @@ def test_filtrar_empresas_visibles_contador_solo_las_suyas(conn):
     assert auth.filtrar_empresas_visibles(conn, contador, empresas) == [{"nit": "2"}]
 
 
+# --- puede_crear_empresas ---
+
+def test_puede_crear_empresas_superusuario(conn):
+    super_usuario = _usuario(conn, "admin@axon.com", "superusuario")
+    assert auth.puede_crear_empresas(super_usuario) is True
+
+
+def test_puede_crear_empresas_contador_con_permiso(conn):
+    contador = _usuario(conn, "contador@firma.com", "contador", puede_crear_usuarios=True)
+    assert auth.puede_crear_empresas(contador) is True
+
+
+def test_puede_crear_empresas_contador_sin_permiso(conn):
+    auxiliar = _usuario(conn, "aux@firma.com", "contador", puede_crear_usuarios=False)
+    assert auth.puede_crear_empresas(auxiliar) is False
+
+
+def test_puede_crear_empresas_rol_empresa(conn):
+    usuario_empresa = _usuario(conn, "empresa@x.com", "empresa")
+    assert auth.puede_crear_empresas(usuario_empresa) is False
+
+
 # --- invitar_usuario ---
 
 def test_invitar_usuario_sin_permiso_da_error(conn):

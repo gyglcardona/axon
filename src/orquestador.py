@@ -144,23 +144,53 @@ def _crear_md_empresa(nit: str, razon_social: str, slug: str) -> None:
     ruta_md.write_text(contenido, encoding="utf-8")
 
 
-def registrar_empresa_nueva(nit: str, razon_social: str, email: str) -> dict:
-    """Autorregistro público de una empresa nueva -- la puerta de entrada al
-    SaaS sin que un superusuario o contador tenga que invitarla primero.
-    El rol del usuario creado siempre es "empresa" y nunca viene del cliente
-    -- autorregistrarse jamás debe poder crear un superusuario o contador.
+def _crear_empresa_y_usuario_dueno(
+    conn, nit: str, razon_social: str, email: str, creado_por_usuario_id: int | None = None,
+) -> tuple[str, int]:
+    """Mecánica compartida entre el autorregistro público
+    (`registrar_empresa_nueva`) y la creación administrada
+    (`crear_empresa_administrada`): valida que el NIT no exista todavía,
+    crea el usuario dueño (rol "empresa", sin contraseña hasta que
+    confirme), el registro de la empresa y materializa su base de datos
+    aislada. No envía la invitación por correo -- cada llamador decide el
+    texto exacto según quién la está creando.
+
+    `creado_por_usuario_id`: quién queda como "creador" de ese usuario
+    dueño para efectos de `auth._validar_puede_gestionar` -- en
+    autorregistro nadie más lo creó (queda `None`); en creación
+    administrada es quien la dio de alta, para que después pueda
+    reenviarle la invitación o desactivarlo desde 'Usuarios' sin ser
+    superusuario.
 
     No crea `config/empresas/<nit>.json` (credenciales/políticas): ese
     archivo se sigue creando solo, perezosamente, la primera vez que alguien
     guarda algo desde "Configuración" -- el motor de reglas ya sabe operar
-    sin políticas propias (cae a perfil de proveedor / regla genérica). Sí
-    materializa de una vez la base de datos aislada de la empresa (ver
-    docs/06-multiempresa-saas/aislamiento-datos.md, "Registro de empresas").
+    sin políticas propias (cae a perfil de proveedor / regla genérica)."""
+    datos_registro = _leer_registro_json()
+    if any(e["nit"] == nit for e in datos_registro["empresas"]):
+        raise ValueError(
+            f"Ya existe una empresa registrada con el NIT {nit}. Si es la tuya, pide a quien la "
+            "administra que te invite desde 'Gestión de usuarios' en vez de crearla de nuevo."
+        )
 
-    Reutiliza el mismo mecanismo de token de una invitación normal
-    (`auth.enviar_invitacion`): la cuenta queda sin contraseña hasta que se
-    confirma el correo, así que nunca se puede iniciar sesión con una
-    empresa que nadie verificó."""
+    usuario_id = auth_store.crear_usuario(
+        conn, email=email, rol="empresa", puede_crear_usuarios=False,
+        creado_por_usuario_id=creado_por_usuario_id,
+    )
+    auth_store.asociar_empresa_a_usuario(conn, usuario_id, nit)
+
+    slugs_existentes = {e["slug"] for e in datos_registro["empresas"]}
+    slug = _generar_slug(razon_social, slugs_existentes)
+    datos_registro["empresas"].append({
+        "slug": slug, "nit": nit, "nombre": razon_social, "config": f"config/empresas/{nit}.json",
+    })
+    _escribir_registro_json(datos_registro)
+    _crear_md_empresa(nit, razon_social, slug)
+    state_store.conectar(nit).close()  # materializa data/empresas/<nit>.db desde ya
+    return slug, usuario_id
+
+
+def _validar_datos_empresa_nueva(nit: str, razon_social: str, email: str) -> tuple[str, str, str]:
     nit = _validar_nit(nit)
     email = _validar_email_publico(email)
     razon_social = (razon_social or "").strip()
@@ -168,6 +198,20 @@ def registrar_empresa_nueva(nit: str, razon_social: str, email: str) -> dict:
         raise ValueError("La razón social es obligatoria.")
     if len(razon_social) > 200:
         raise ValueError("La razón social es demasiado larga (máximo 200 caracteres).")
+    return nit, razon_social, email
+
+
+def registrar_empresa_nueva(nit: str, razon_social: str, email: str) -> dict:
+    """Autorregistro público de una empresa nueva -- la puerta de entrada al
+    SaaS sin que un superusuario o contador tenga que invitarla primero.
+    El rol del usuario creado siempre es "empresa" y nunca viene del cliente
+    -- autorregistrarse jamás debe poder crear un superusuario o contador.
+
+    Reutiliza el mismo mecanismo de token de una invitación normal
+    (`auth.enviar_invitacion`): la cuenta queda sin contraseña hasta que se
+    confirma el correo, así que nunca se puede iniciar sesión con una
+    empresa que nadie verificó."""
+    nit, razon_social, email = _validar_datos_empresa_nueva(nit, razon_social, email)
 
     conn = auth_store.conectar()
     try:
@@ -180,24 +224,7 @@ def registrar_empresa_nueva(nit: str, razon_social: str, email: str) -> dict:
             )
         auth_store.registrar_intento_registro_empresa(conn, email)
 
-        datos_registro = _leer_registro_json()
-        if any(e["nit"] == nit for e in datos_registro["empresas"]):
-            raise ValueError(
-                f"Ya existe una empresa registrada con el NIT {nit}. Si es la tuya, pide a quien la "
-                "administra que te invite desde 'Gestión de usuarios' en vez de crearla de nuevo."
-            )
-
-        usuario_id = auth_store.crear_usuario(conn, email=email, rol="empresa", puede_crear_usuarios=False)
-        auth_store.asociar_empresa_a_usuario(conn, usuario_id, nit)
-
-        slugs_existentes = {e["slug"] for e in datos_registro["empresas"]}
-        slug = _generar_slug(razon_social, slugs_existentes)
-        datos_registro["empresas"].append({
-            "slug": slug, "nit": nit, "nombre": razon_social, "config": f"config/empresas/{nit}.json",
-        })
-        _escribir_registro_json(datos_registro)
-        _crear_md_empresa(nit, razon_social, slug)
-        state_store.conectar(nit).close()  # materializa data/empresas/<nit>.db desde ya
+        slug, usuario_id = _crear_empresa_y_usuario_dueno(conn, nit, razon_social, email)
 
         auth.enviar_invitacion(
             conn, usuario_id, email,
@@ -208,6 +235,45 @@ def registrar_empresa_nueva(nit: str, razon_social: str, email: str) -> dict:
         conn.close()
 
     return {"registrado": True, "slug": slug, "nit": nit}
+
+
+def crear_empresa_administrada(nit: str, razon_social: str, email: str, actor: dict) -> dict:
+    """Crea una empresa nueva desde dentro del sistema -- para cuando un
+    superusuario o un contador (con `puede_crear_usuarios`) necesita darla
+    de alta él mismo, sin que el cliente tenga que autorregistrarse. A
+    diferencia de `registrar_empresa_nueva`, quien crea NO es el dueño de
+    la empresa: nunca ve ni necesita confirmar el correo del cliente -- el
+    enlace para fijar la contraseña le llega directo a esa bandeja y el
+    cliente lo usa cuando quiera, sin bloquear a quien la creó.
+
+    Si `actor` es un contador (no superusuario), la empresa queda asociada
+    también a él (además del usuario dueño que se crea) -- así puede
+    gestionarla de una vez, y ningún otro contador o usuario sin
+    asociación explícita la ve. Un superusuario nunca necesita esa
+    asociación: ya ve todas las empresas por diseño. Sin el límite de
+    intentos por hora del autorregistro público -- quien llama ya está
+    autenticado y con permiso verificado, no es un formulario anónimo."""
+    if not auth.puede_crear_empresas(actor):
+        raise auth.AuthError("No tienes permiso para crear empresas nuevas.")
+    nit, razon_social, email = _validar_datos_empresa_nueva(nit, razon_social, email)
+
+    conn = auth_store.conectar()
+    try:
+        slug, usuario_id = _crear_empresa_y_usuario_dueno(
+            conn, nit, razon_social, email, creado_por_usuario_id=actor["id"],
+        )
+        if actor["rol"] != "superusuario":
+            auth_store.asociar_empresa_a_usuario(conn, actor["id"], nit)
+
+        auth.enviar_invitacion(
+            conn, usuario_id, email,
+            "Te registraron en AXON -- confirma tu correo y crea tu contraseña",
+            f"{actor['email']} registró {razon_social} en AXON.",
+        )
+    finally:
+        conn.close()
+
+    return {"creado": True, "slug": slug, "nit": nit}
 
 
 def eliminar_empresa(slug: str) -> dict:

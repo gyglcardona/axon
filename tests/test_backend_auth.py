@@ -427,6 +427,103 @@ def test_registrar_empresa_usuario_creado_no_puede_iniciar_sesion_sin_confirmar(
     assert r.status_code == 401
 
 
+# --- POST /api/auth/crear-empresa (superusuario o contador con permiso) ---
+
+def test_crear_empresa_sin_login_da_401(client_registro):
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva", "email": "dueno@empresa.com",
+    })
+    assert r.status_code == 401
+
+
+def test_crear_empresa_sin_permiso_da_400(client_registro):
+    _crear_usuario("empresa@x.com", "empresa", password="ClaveSegura123")
+    client_registro.post("/api/auth/login", json={"email": "empresa@x.com", "password": "ClaveSegura123"})
+
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva", "email": "dueno@empresa.com",
+    })
+
+    assert r.status_code == 400
+
+
+def test_crear_empresa_contador_sin_permiso_da_400(client_registro):
+    _crear_usuario("aux@firma.com", "contador", password="ClaveSegura123", puede_crear_usuarios=False)
+    client_registro.post("/api/auth/login", json={"email": "aux@firma.com", "password": "ClaveSegura123"})
+
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva", "email": "dueno@empresa.com",
+    })
+
+    assert r.status_code == 400
+
+
+def test_crear_empresa_superusuario_ok(client_registro):
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client_registro.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva S.A.S.", "email": "dueno@empresa.com",
+    })
+
+    assert r.status_code == 200
+    assert r.get_json()["creado"] is True
+    assert len(client_registro.correos_enviados) == 1
+
+    conn = auth_store.conectar()
+    try:
+        dueno = auth_store.obtener_usuario_por_email(conn, "dueno@empresa.com")
+        assert dueno["rol"] == "empresa"
+        assert dueno["password_hash"] is None  # no puede iniciar sesión hasta fijarla
+    finally:
+        conn.close()
+
+
+def test_crear_empresa_contador_con_permiso_queda_asociada_a_el(client_registro):
+    _crear_usuario("contador@firma.com", "contador", password="ClaveSegura123", puede_crear_usuarios=True)
+    client_registro.post("/api/auth/login", json={"email": "contador@firma.com", "password": "ClaveSegura123"})
+
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva", "email": "dueno@empresa.com",
+    })
+    assert r.status_code == 200
+    nit_creado = r.get_json()["nit"]
+
+    # el contador que la creó ya puede verla, sin que nadie más se la asigne
+    r_empresas = client_registro.get("/api/empresas")
+    assert nit_creado in [e["nit"] for e in r_empresas.get_json()]
+
+
+def test_crear_empresa_no_es_visible_para_otro_contador_no_asociado(client_registro):
+    _crear_usuario("contador1@firma.com", "contador", password="ClaveSegura123", puede_crear_usuarios=True)
+    client_registro.post("/api/auth/login", json={"email": "contador1@firma.com", "password": "ClaveSegura123"})
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Nueva", "email": "dueno@empresa.com",
+    })
+    nit_creado = r.get_json()["nit"]
+    client_registro.post("/api/auth/logout")
+
+    _crear_usuario("contador2@firma.com", "contador", password="ClaveSegura123", puede_crear_usuarios=True)
+    client_registro.post("/api/auth/login", json={"email": "contador2@firma.com", "password": "ClaveSegura123"})
+
+    r_empresas = client_registro.get("/api/empresas")
+    assert nit_creado not in [e["nit"] for e in r_empresas.get_json()]
+
+
+def test_crear_empresa_nit_duplicado_da_400(client_registro):
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client_registro.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Uno", "email": "uno@empresa.com",
+    })
+
+    r = client_registro.post("/api/auth/crear-empresa", json={
+        "nit": "900123456", "razon_social": "Empresa Dos", "email": "dos@empresa.com",
+    })
+
+    assert r.status_code == 400
+
+
 # --- POST /api/auth/usuarios/<id>/rol (solo superusuario) ---
 
 def test_cambiar_rol_usuario_endpoint_requiere_superusuario(client):

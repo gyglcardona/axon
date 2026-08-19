@@ -72,6 +72,15 @@ def enviar_invitacion(conn: sqlite3.Connection, usuario_id: int, email: str, asu
     )
 
 
+def puede_crear_empresas(usuario: dict) -> bool:
+    """Mismo criterio que ver el grupo 'Acceso' en el menú (superusuario, o
+    contador con `puede_crear_usuarios`) -- crear una empresa nueva desde
+    dentro del sistema es una responsabilidad del mismo nivel que invitar
+    usuarios, así que se gates igual: un auxiliar (contador sin ese
+    permiso) no puede."""
+    return usuario["rol"] == "superusuario" or bool(usuario["puede_crear_usuarios"])
+
+
 def invitar_usuario(
     conn: sqlite3.Connection, creador: dict, email: str, rol: str, nits: list[str],
     puede_crear_usuarios: bool = False,
