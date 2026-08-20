@@ -413,9 +413,17 @@
   .rp-card-respuesta{margin-top:11px; padding:10px 12px; border-radius:8px; background:var(--accent-soft); border-left:3px solid var(--accent); font-size:12px; color:var(--ink-soft); line-height:1.55;}
   .rp-card-respuesta .rp-respuesta-label{display:block; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:4px;}
   .rp-card-aplicada{margin-top:9px; font-size:10.5px; color:var(--st-ok); font-weight:600; display:flex; align-items:center; gap:5px;}
+  .rp-card-vermas{border:none; background:transparent; color:var(--accent); font:inherit; font-size:11px; font-weight:600; cursor:pointer; padding:0; margin-top:5px;}
   .rp-empty{padding:40px 20px; text-align:center; color:var(--ink-mute); font-size:12.5px; border:1px dashed var(--line); border-radius:var(--radius); background:var(--panel-sunken);}
 
+  .rp-lista-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;}
+
   .rp-confirmadas{border-top:1px solid var(--line); padding-top:20px;}
+  .rp-confirmadas-header{width:100%; display:flex; align-items:center; gap:8px; border:none; background:transparent; cursor:pointer; padding:0; text-align:left;}
+  .rp-confirmadas-header .section-label{margin:0;}
+  .rp-confirmadas-chevron{width:12px; height:12px; color:var(--ink-mute); transition:transform .15s ease; flex-shrink:0;}
+  .rp-confirmadas.open .rp-confirmadas-chevron{transform:rotate(90deg);}
+  .rp-confirmadas-body{margin-top:12px;}
   .rp-confirmada-card{background:var(--panel-sunken); border:1px solid var(--line-soft); border-radius:var(--radius); padding:12px 15px; margin-bottom:9px;}
   .rp-confirmada-titulo{font-size:12px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .rp-confirmada-titulo .nit{font-weight:400; font-size:10.5px;}
@@ -672,15 +680,19 @@
         </div>
         <div class="seg" id="rpFiltroEstadoSeg"></div>
         <div class="spacer"></div>
+        <button class="btn primary" id="rpAbrirComposer">+ Nueva regla</button>
       </div>
 
       <div class="rp-body">
-        <div class="rp-composer">
+        <div class="rp-composer" id="rpComposer" style="display:none;">
           <p class="section-label" style="margin:0;">Proponer una regla o duda nueva para esta empresa</p>
           <textarea id="rpNuevoTexto" rows="2" placeholder="Describe la regla contable o la duda sobre cómo se está causando esta empresa..."></textarea>
           <div class="rp-composer-actions">
             <div class="modal-resultado" id="rpCrearResultado"></div>
-            <button class="btn primary" id="rpCrear" style="flex-shrink:0;">Crear regla</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn" id="rpCancelarComposer">Cancelar</button>
+              <button class="btn primary" id="rpCrear">Crear regla</button>
+            </div>
           </div>
         </div>
 
@@ -690,8 +702,11 @@
         </div>
 
         <div class="rp-confirmadas" id="rpConfirmadasBloque" style="display:none;">
-          <p class="section-label">Reglas ya confirmadas (solo lectura)</p>
-          <div id="rpConfirmadasLista"></div>
+          <button type="button" class="rp-confirmadas-header" id="rpConfirmadasToggle">
+            <svg class="rp-confirmadas-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <p class="section-label">Reglas ya confirmadas (solo lectura)</p>
+          </button>
+          <div id="rpConfirmadasLista" class="rp-confirmadas-body" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -3493,6 +3508,7 @@ function cambiarVista(vista){
   }else if(vista === 'reglas-propuestas'){
     document.getElementById('mainTitle').textContent = 'Reglas de empresa';
     document.getElementById('topSub').textContent = 'Reglas y dudas propuestas para esta empresa.';
+    cerrarComposerRegla();
     buscarReglasPropuestas();
   }else{
     document.getElementById('mainTitle').textContent = 'Compras en Siigo';
@@ -3656,7 +3672,11 @@ function renderDetalleMovimientoContai(d){
 // superusuario/contador, más las ya confirmadas de solo lectura) ---
 const ETIQUETAS_ESTADO_REGLA = {pendiente: 'Pendiente', respondida: 'Respondida', aplicada: 'Aplicada', no_viable: 'No viable'};
 const CLASE_ESTADO_REGLA = {pendiente: 'e-pend', respondida: 'e-resp', aplicada: 'e-sinc', no_viable: 'e-err'};
+const RP_TRUNCADO_LARGO = 220; // caracteres antes de recortar el texto de una regla en la lista
 estado.rpFiltroEstado = '';
+estado.rpExpandidas = new Set();       // ids de reglas con "ver más" ya abierto
+estado.reglasConfirmadas = {politicas_empresa: [], perfiles_proveedor: []};
+estado.rpConfirmadasAbierto = false;   // acordeón de solo lectura, contraído por defecto
 
 function escapeHtml(texto){
   const div = document.createElement('div');
@@ -3684,9 +3704,10 @@ async function buscarReglasPropuestas(){
       apiGet(`/api/empresas/${emp.slug}/reglas-confirmadas`),
     ]);
     estado.reglasPropuestas = propuestas;
+    estado.reglasConfirmadas = confirmadas;
     renderFiltroEstadoReglas();
     renderReglasPropuestas();
-    renderReglasConfirmadas(confirmadas);
+    renderReglasConfirmadas();
   }catch(e){
     document.getElementById('rpEmptyState').textContent = e.message;
     document.getElementById('rpEmptyState').style.display = 'block';
@@ -3738,15 +3759,20 @@ function renderReglasPropuestas(){
   }
   empty.style.display = 'none';
 
-  cont.innerHTML = lista.slice().reverse().map(r => `
+  cont.innerHTML = lista.slice().reverse().map(r => {
+    const expandida = estado.rpExpandidas.has(r.id);
+    const esLarga = r.texto.length > RP_TRUNCADO_LARGO;
+    const textoMostrado = (esLarga && !expandida) ? r.texto.slice(0, RP_TRUNCADO_LARGO).trim() + '…' : r.texto;
+    return `
     <div class="rp-card">
       <div class="rp-card-head">
-        <div class="rp-card-texto">${escapeHtml(r.texto)}</div>
+        <div class="rp-card-texto">${escapeHtml(textoMostrado)}</div>
         <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
           <span class="estado-pill ${CLASE_ESTADO_REGLA[r.estado] || 'e-pend'}">${ETIQUETAS_ESTADO_REGLA[r.estado] || r.estado}</span>
           ${r.estado === 'pendiente' ? `<button type="button" class="rp-card-borrar" data-id="${r.id}" title="Borrar esta regla" style="border:none; background:transparent; color:var(--ink-mute); cursor:pointer; font-size:14px; padding:2px 4px; line-height:1;">✕</button>` : ''}
         </div>
       </div>
+      ${esLarga ? `<button type="button" class="rp-card-vermas" data-id="${r.id}">${expandida ? 'Ver menos' : 'Ver más'}</button>` : ''}
       <div class="rp-card-meta">
         <span>Propuesta por ${escapeHtml(r.creado_por)}</span>
         <span>${formatFechaHoraCorta(r.creado_en)}</span>
@@ -3759,20 +3785,42 @@ function renderReglasPropuestas(){
       ` : ''}
       ${r.aplicada_en ? `<div class="rp-card-aplicada">✓ Aplicada el ${formatFechaHoraCorta(r.aplicada_en)}</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
-function renderReglasConfirmadas(datos){
+function _confirmadaCoincide(item, q, esProveedor){
+  if(!q) return true;
+  const partes = [item.clave, item.nombre, item.nit, item.detalle_md, JSON.stringify(item.comportamiento || {})];
+  return partes.some(p => p && String(p).toLowerCase().includes(q));
+}
+
+function renderReglasConfirmadas(){
   const bloque = document.getElementById('rpConfirmadasBloque');
   const cont = document.getElementById('rpConfirmadasLista');
-  const politicas = (datos && datos.politicas_empresa) || [];
-  const proveedores = (datos && datos.perfiles_proveedor) || [];
+  const q = document.getElementById('rpBuscador').value.trim().toLowerCase();
+  const todasPoliticas = estado.reglasConfirmadas.politicas_empresa || [];
+  const todosProveedores = estado.reglasConfirmadas.perfiles_proveedor || [];
 
-  if(!politicas.length && !proveedores.length){
+  if(!todasPoliticas.length && !todosProveedores.length){
     bloque.style.display = 'none';
     return;
   }
   bloque.style.display = '';
+
+  const politicas = todasPoliticas.filter(p => _confirmadaCoincide(p, q));
+  const proveedores = todosProveedores.filter(p => _confirmadaCoincide(p, q));
+
+  // con una búsqueda activa, se abre solo para mostrar el resultado -- sin
+  // perder el estado del acordeón que el usuario dejó manualmente.
+  const abierto = estado.rpConfirmadasAbierto || !!q;
+  bloque.classList.toggle('open', abierto);
+  document.getElementById('rpConfirmadasLista').style.display = abierto ? '' : 'none';
+
+  if(q && !politicas.length && !proveedores.length){
+    cont.innerHTML = '<p style="font-size:11.5px; color:var(--ink-mute); margin:0;">Ninguna regla confirmada coincide con esta búsqueda.</p>';
+    return;
+  }
 
   const comportamiento = (obj) => {
     const entradas = Object.entries(obj || {}).filter(([,v]) => v !== null && v !== '' && v !== false);
@@ -3802,6 +3850,17 @@ function renderReglasConfirmadas(datos){
   cont.innerHTML = tarjetasPolitica + tarjetasProveedor;
 }
 
+function abrirComposerRegla(){
+  document.getElementById('rpComposer').style.display = '';
+  document.getElementById('rpNuevoTexto').focus();
+}
+
+function cerrarComposerRegla(){
+  document.getElementById('rpComposer').style.display = 'none';
+  document.getElementById('rpNuevoTexto').value = '';
+  document.getElementById('rpCrearResultado').textContent = '';
+}
+
 async function crearReglaPropuesta(){
   const emp = empresaActual();
   if(!emp) return;
@@ -3817,8 +3876,8 @@ async function crearReglaPropuesta(){
   resultadoEl.textContent = '';
   try{
     await apiPost(`/api/empresas/${emp.slug}/reglas-propuestas`, {texto});
-    textarea.value = '';
     toast('Regla creada.');
+    cerrarComposerRegla();
     await buscarReglasPropuestas();
   }catch(e){
     resultadoEl.innerHTML = `<span style="color:var(--st-error)">${e.message}</span>`;
@@ -4212,11 +4271,23 @@ document.getElementById('navMovimientosContai').addEventListener('click', () => 
 document.getElementById('mcFiltrar').addEventListener('click', buscarMovimientosContai);
 document.getElementById('mcBuscador').addEventListener('keydown', (ev) => { if(ev.key === 'Enter') buscarMovimientosContai(); });
 document.getElementById('navReglasPropuestas').addEventListener('click', () => cambiarVista('reglas-propuestas'));
-document.getElementById('rpBuscador').addEventListener('input', renderReglasPropuestas);
+document.getElementById('rpBuscador').addEventListener('input', () => { renderReglasPropuestas(); renderReglasConfirmadas(); });
 document.getElementById('rpCrear').addEventListener('click', crearReglaPropuesta);
+document.getElementById('rpAbrirComposer').addEventListener('click', abrirComposerRegla);
+document.getElementById('rpCancelarComposer').addEventListener('click', cerrarComposerRegla);
+document.getElementById('rpConfirmadasToggle').addEventListener('click', () => {
+  estado.rpConfirmadasAbierto = !estado.rpConfirmadasAbierto;
+  renderReglasConfirmadas();
+});
 document.getElementById('rpLista').addEventListener('click', (ev) => {
-  const btn = ev.target.closest('.rp-card-borrar');
-  if(btn) borrarReglaPropuesta(parseInt(btn.dataset.id, 10));
+  const btnBorrar = ev.target.closest('.rp-card-borrar');
+  if(btnBorrar){ borrarReglaPropuesta(parseInt(btnBorrar.dataset.id, 10)); return; }
+  const btnVerMas = ev.target.closest('.rp-card-vermas');
+  if(btnVerMas){
+    const id = parseInt(btnVerMas.dataset.id, 10);
+    if(estado.rpExpandidas.has(id)) estado.rpExpandidas.delete(id); else estado.rpExpandidas.add(id);
+    renderReglasPropuestas();
+  }
 });
 document.getElementById('dmsCerrar').addEventListener('click', () => {
   document.getElementById('modalCatalogosSiigo').classList.remove('show');
