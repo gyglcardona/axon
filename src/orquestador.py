@@ -24,11 +24,12 @@ import drive_client
 import gmail_client
 import google_conexiones
 import motor_sugerencias
+import reglas_propuestas
 import siigo_client
 import siigo_payload
 import state_store
 from dian_parser import extraer_cufe, extraer_tercero, parsear_factura
-from motor_reglas import clasificar_factura
+from motor_reglas import cargar_config_empresa, cargar_config_proveedor, clasificar_factura
 from zip_handler import descubrir_documentos, DocumentoConError
 
 TIPOS_CATALOGO_SIIGO = ("document_types", "payment_types", "journals", "taxes")
@@ -45,6 +46,8 @@ CONFIG_EMPRESAS_DIR = Path("config/empresas")
 CONFIG_PROVEEDORES_DIR = Path("config/proveedores")
 ENTRADA_DIAN = Path("data/entrada-dian")
 BASE_DATOS_EMPRESAS = Path("data/empresas")
+REGLAS_PROPUESTAS_DIR = Path("data/reglas-propuestas")
+DOCS_REGLAS_NEGOCIO_DIR = Path("docs/02-reglas-negocio")
 
 
 class EmpresaNoEncontrada(Exception):
@@ -274,6 +277,100 @@ def crear_empresa_administrada(nit: str, razon_social: str, email: str, actor: d
         conn.close()
 
     return {"creado": True, "slug": slug, "nit": nit}
+
+
+def listar_reglas_propuestas(slug: str, actor: dict) -> list[dict]:
+    if not auth.puede_gestionar_reglas(actor):
+        raise auth.AuthError("No tienes permiso para ver las reglas propuestas.")
+    nit = resolver_empresa(slug)["nit"]
+    return reglas_propuestas.listar(nit, REGLAS_PROPUESTAS_DIR)
+
+
+def crear_regla_propuesta(slug: str, texto: str, actor: dict) -> dict:
+    if not auth.puede_gestionar_reglas(actor):
+        raise auth.AuthError("No tienes permiso para proponer reglas.")
+    nit = resolver_empresa(slug)["nit"]
+    return reglas_propuestas.crear(nit, texto, actor["email"], REGLAS_PROPUESTAS_DIR)
+
+
+def cambiar_estado_regla_propuesta(slug: str, regla_id: int, estado: str, respuesta: str | None, actor: dict) -> dict:
+    """Estado y respuesta se dejan quietos hasta que alguien -- hoy, Claude
+    en una sesión de Claude Code, guiado por quien pidió la revisión --
+    valida la regla a mano; nunca hay un proceso automático que la marque
+    "aplicada" sin que un humano confirme el cambio de código que le
+    corresponde (ver docs/00-contexto/resumen-proyecto.md)."""
+    if not auth.puede_gestionar_reglas(actor):
+        raise auth.AuthError("No tienes permiso para modificar reglas propuestas.")
+    nit = resolver_empresa(slug)["nit"]
+    return reglas_propuestas.cambiar_estado(nit, regla_id, estado, respuesta, actor["email"], REGLAS_PROPUESTAS_DIR)
+
+
+def eliminar_regla_propuesta(slug: str, regla_id: int, actor: dict) -> None:
+    if not auth.puede_gestionar_reglas(actor):
+        raise auth.AuthError("No tienes permiso para borrar reglas propuestas.")
+    nit = resolver_empresa(slug)["nit"]
+    reglas_propuestas.eliminar(nit, regla_id, REGLAS_PROPUESTAS_DIR)
+
+
+def _leer_doc_regla_negocio(nivel: str, nit: str) -> str | None:
+    """Busca `docs/02-reglas-negocio/<nivel>/<nit>-*.md` -- el slug después
+    del NIT varía por archivo (ver docs/02-reglas-negocio/README.md), así
+    que se busca por prefijo en vez de asumir un nombre exacto."""
+    carpeta = DOCS_REGLAS_NEGOCIO_DIR / nivel
+    if not carpeta.exists():
+        return None
+    coincidencias = sorted(carpeta.glob(f"{nit}-*.md"))
+    return coincidencias[0].read_text(encoding="utf-8") if coincidencias else None
+
+
+def reglas_confirmadas(slug: str, actor: dict) -> dict:
+    """Reglas YA vigentes -- las que de verdad ejecuta el motor de reglas
+    hoy, de solo lectura, para que el usuario entienda el porqué de un
+    cálculo sin tener que preguntarlo. Nunca expone
+    `config/empresas/<nit>.json` completo (trae credenciales de Siigo) --
+    solo su clave "politicas". Los perfiles de proveedor se limitan a los
+    proveedores que YA le facturaron a esta empresa (ver
+    state_store.listar_proveedores_distintos) -- no es una fuga nueva,
+    porque esa empresa ya los ve en su propia Bandeja de revisión, pero
+    tampoco se le muestra el perfil de un proveedor que nunca le ha
+    facturado."""
+    if not auth.puede_gestionar_reglas(actor):
+        raise auth.AuthError("No tienes permiso para ver las reglas confirmadas.")
+    nit = resolver_empresa(slug)["nit"]
+
+    config_empresa = cargar_config_empresa(nit, CONFIG_EMPRESAS_DIR)
+    politicas_empresa = [
+        {
+            "clave": clave,
+            "comportamiento": valor.get("comportamiento") or {},
+            "detalle_md": _leer_doc_regla_negocio("politicas-empresa", nit),
+        }
+        for clave, valor in (config_empresa.get("politicas") or {}).items()
+        if valor.get("activa")
+    ]
+
+    db_path = BASE_DATOS_EMPRESAS / f"{nit}.db"
+    proveedores_conocidos = []
+    if db_path.exists():
+        conn = state_store.conectar(nit)
+        try:
+            proveedores_conocidos = state_store.listar_proveedores_distintos(conn)
+        finally:
+            conn.close()
+
+    perfiles_proveedor = []
+    for proveedor in proveedores_conocidos:
+        config_proveedor = cargar_config_proveedor(proveedor["nit"], CONFIG_PROVEEDORES_DIR)
+        if not config_proveedor:
+            continue
+        perfiles_proveedor.append({
+            "nit": proveedor["nit"],
+            "nombre": config_proveedor.get("nombre") or proveedor["nombre"],
+            "comportamiento": config_proveedor.get("comportamiento") or {},
+            "detalle_md": _leer_doc_regla_negocio("perfiles-proveedor", proveedor["nit"]),
+        })
+
+    return {"politicas_empresa": politicas_empresa, "perfiles_proveedor": perfiles_proveedor}
 
 
 def eliminar_empresa(slug: str) -> dict:

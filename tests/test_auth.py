@@ -113,6 +113,25 @@ def test_puede_crear_empresas_rol_empresa(conn):
     assert auth.puede_crear_empresas(usuario_empresa) is False
 
 
+# --- puede_gestionar_reglas ---
+
+def test_puede_gestionar_reglas_superusuario(conn):
+    super_usuario = _usuario(conn, "admin@axon.com", "superusuario")
+    assert auth.puede_gestionar_reglas(super_usuario) is True
+
+
+def test_puede_gestionar_reglas_cualquier_contador(conn):
+    """A diferencia de puede_crear_empresas, no depende de
+    puede_crear_usuarios -- cualquier contador puede proponer/ver reglas."""
+    contador = _usuario(conn, "contador@firma.com", "contador", puede_crear_usuarios=False)
+    assert auth.puede_gestionar_reglas(contador) is True
+
+
+def test_puede_gestionar_reglas_rol_empresa(conn):
+    usuario_empresa = _usuario(conn, "empresa@x.com", "empresa")
+    assert auth.puede_gestionar_reglas(usuario_empresa) is False
+
+
 # --- invitar_usuario ---
 
 def test_invitar_usuario_sin_permiso_da_error(conn):

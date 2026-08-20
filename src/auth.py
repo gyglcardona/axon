@@ -81,6 +81,16 @@ def puede_crear_empresas(usuario: dict) -> bool:
     return usuario["rol"] == "superusuario" or bool(usuario["puede_crear_usuarios"])
 
 
+def puede_gestionar_reglas(usuario: dict) -> bool:
+    """Reglas propuestas por empresa (ver `reglas_propuestas.py`) -- por
+    ahora exclusivo de superusuario y contador (cualquier contador, no solo
+    los que tienen `puede_crear_usuarios`): es contenido de trabajo
+    contable, no una facultad de delegación de acceso, así que no usa el
+    mismo criterio que `puede_crear_empresas`. Un usuario de rol "empresa"
+    todavía no debe verlas ni crearlas."""
+    return usuario["rol"] in ("superusuario", "contador")
+
+
 def invitar_usuario(
     conn: sqlite3.Connection, creador: dict, email: str, rol: str, nits: list[str],
     puede_crear_usuarios: bool = False,

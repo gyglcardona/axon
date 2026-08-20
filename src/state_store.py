@@ -518,6 +518,24 @@ def listar_detalle_por_compra(conn: sqlite3.Connection, compra_id: int) -> list[
     return [dict(zip(columnas, f)) for f in filas]
 
 
+def listar_proveedores_distintos(conn: sqlite3.Connection) -> list[dict]:
+    """NIT + nombre de cada proveedor que ya le facturó a esta empresa --
+    usado para saber a qué perfiles de proveedor (config/proveedores/) tiene
+    sentido darle visibilidad en 'Reglas por empresa': solo a los que esta
+    empresa ya conoce (aparecen en su propia Bandeja de revisión), nunca a
+    todos los proveedores del sistema."""
+    filas = conn.execute(
+        """
+        SELECT proveedor_nit, MAX(proveedor_nombre) AS proveedor_nombre
+        FROM compras
+        WHERE proveedor_nit IS NOT NULL AND proveedor_nit != ''
+        GROUP BY proveedor_nit
+        ORDER BY proveedor_nombre
+        """,
+    ).fetchall()
+    return [{"nit": f[0], "nombre": f[1]} for f in filas]
+
+
 def listar_items_por_proveedor_y_rango(
     conn: sqlite3.Connection, proveedor_nit: str, desde: str, hasta: str,
 ) -> list[dict]:

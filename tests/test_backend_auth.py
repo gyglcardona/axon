@@ -624,3 +624,222 @@ def test_eliminar_empresa_endpoint_ok(client_registro):
 def test_eliminar_empresa_endpoint_sin_sesion_da_401(client_registro):
     r = client_registro.delete("/api/empresas/lo-que-sea")
     assert r.status_code == 401
+
+
+# --- endpoints /api/empresas/<slug>/reglas-propuestas ---
+
+@pytest.fixture
+def reglas_dir(tmp_path, monkeypatch):
+    ruta = tmp_path / "data" / "reglas-propuestas"
+    monkeypatch.setattr(flask_app_module.orquestador, "REGLAS_PROPUESTAS_DIR", ruta)
+    return ruta
+
+
+def test_reglas_propuestas_sin_login_da_401(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    r = client.get("/api/empresas/empresa-test/reglas-propuestas")
+    assert r.status_code == 401
+
+
+def test_crear_regla_propuesta_rol_empresa_da_400(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    usuario_id = _crear_usuario("dueño@x.com", "empresa", password="ClaveSegura123")
+    conn = auth_store.conectar()
+    auth_store.asociar_empresa_a_usuario(conn, usuario_id, "900111222")
+    conn.close()
+    client.post("/api/auth/login", json={"email": "dueño@x.com", "password": "ClaveSegura123"})
+
+    r = client.post("/api/empresas/empresa-test/reglas-propuestas", json={"texto": "Una duda"})
+
+    assert r.status_code == 400
+
+
+def test_crear_regla_propuesta_contador_ok(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    usuario_id = _crear_usuario("contador@firma.com", "contador", password="ClaveSegura123")
+    conn = auth_store.conectar()
+    auth_store.asociar_empresa_a_usuario(conn, usuario_id, "900111222")
+    conn.close()
+    client.post("/api/auth/login", json={"email": "contador@firma.com", "password": "ClaveSegura123"})
+
+    r = client.post("/api/empresas/empresa-test/reglas-propuestas", json={"texto": "IVA no discriminado"})
+
+    assert r.status_code == 200
+    assert r.get_json()["texto"] == "IVA no discriminado"
+    assert r.get_json()["estado"] == "pendiente"
+
+
+def test_crear_regla_propuesta_texto_vacio_da_400(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+
+    r = client.post("/api/empresas/empresa-test/reglas-propuestas", json={"texto": "   "})
+
+    assert r.status_code == 400
+
+
+def test_listar_reglas_propuestas_superusuario_ve_las_de_cualquier_empresa(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    client.post("/api/empresas/empresa-test/reglas-propuestas", json={"texto": "Regla uno"})
+    client.post("/api/empresas/empresa-test/reglas-propuestas", json={"texto": "Regla dos"})
+
+    r = client.get("/api/empresas/empresa-test/reglas-propuestas")
+
+    assert r.status_code == 200
+    assert len(r.get_json()) == 2
+
+
+def test_cambiar_estado_regla_propuesta_ok(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    regla_id = client.post(
+        "/api/empresas/empresa-test/reglas-propuestas", json={"texto": "Regla"},
+    ).get_json()["id"]
+
+    r = client.patch(
+        f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}",
+        json={"estado": "aplicada", "respuesta": "Se ajustó el motor de reglas."},
+    )
+
+    assert r.status_code == 200
+    assert r.get_json()["estado"] == "aplicada"
+    assert r.get_json()["aplicada_en"] is not None
+
+
+def test_cambiar_estado_regla_propuesta_estado_invalido_da_400(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    regla_id = client.post(
+        "/api/empresas/empresa-test/reglas-propuestas", json={"texto": "Regla"},
+    ).get_json()["id"]
+
+    r = client.patch(
+        f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}", json={"estado": "no-existe"},
+    )
+
+    assert r.status_code == 400
+
+
+# --- endpoint /api/empresas/<slug>/reglas-confirmadas (solo lectura) ---
+
+@pytest.fixture
+def reglas_confirmadas_dirs(tmp_path, monkeypatch):
+    config_empresas = tmp_path / "config" / "empresas"
+    config_proveedores = tmp_path / "config" / "proveedores"
+    base_datos_empresas = tmp_path / "data" / "empresas"
+    config_empresas.mkdir(parents=True)
+    config_proveedores.mkdir(parents=True)
+    monkeypatch.setattr(flask_app_module.orquestador, "CONFIG_EMPRESAS_DIR", config_empresas)
+    monkeypatch.setattr(flask_app_module.orquestador, "CONFIG_PROVEEDORES_DIR", config_proveedores)
+    monkeypatch.setattr(flask_app_module.orquestador, "BASE_DATOS_EMPRESAS", base_datos_empresas)
+    return config_empresas, config_proveedores, base_datos_empresas
+
+
+def test_reglas_confirmadas_sin_login_da_401(client, monkeypatch, reglas_confirmadas_dirs):
+    _mockear_empresa(monkeypatch)
+    r = client.get("/api/empresas/empresa-test/reglas-confirmadas")
+    assert r.status_code == 401
+
+
+def test_reglas_confirmadas_rol_empresa_da_400(client, monkeypatch, reglas_confirmadas_dirs):
+    _mockear_empresa(monkeypatch)
+    usuario_id = _crear_usuario("dueño@x.com", "empresa", password="ClaveSegura123")
+    conn = auth_store.conectar()
+    auth_store.asociar_empresa_a_usuario(conn, usuario_id, "900111222")
+    conn.close()
+    client.post("/api/auth/login", json={"email": "dueño@x.com", "password": "ClaveSegura123"})
+
+    r = client.get("/api/empresas/empresa-test/reglas-confirmadas")
+
+    assert r.status_code == 400
+
+
+def test_reglas_confirmadas_superusuario_ok(client, monkeypatch, reglas_confirmadas_dirs):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+
+    r = client.get("/api/empresas/empresa-test/reglas-confirmadas")
+
+    assert r.status_code == 200
+    assert r.get_json() == {"politicas_empresa": [], "perfiles_proveedor": []}
+
+
+def test_reglas_confirmadas_incluye_politica_activa(client, monkeypatch, reglas_confirmadas_dirs):
+    config_empresas, _, _ = reglas_confirmadas_dirs
+    _mockear_empresa(monkeypatch)
+    (config_empresas / "900111222.json").write_text(
+        '{"politicas": {"iva_no_discriminado": {"activa": true, "comportamiento": {"cuenta_contable": "519595"}}}}',
+        encoding="utf-8",
+    )
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+
+    r = client.get("/api/empresas/empresa-test/reglas-confirmadas")
+
+    assert r.status_code == 200
+    assert r.get_json()["politicas_empresa"][0]["clave"] == "iva_no_discriminado"
+
+
+# --- endpoint DELETE /api/empresas/<slug>/reglas-propuestas/<id> ---
+
+def test_eliminar_regla_propuesta_endpoint_ok(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    regla_id = client.post(
+        "/api/empresas/empresa-test/reglas-propuestas", json={"texto": "prueba"},
+    ).get_json()["id"]
+
+    r = client.delete(f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}")
+
+    assert r.status_code == 200
+    assert r.get_json()["eliminada"] is True
+    assert client.get("/api/empresas/empresa-test/reglas-propuestas").get_json() == []
+
+
+def test_eliminar_regla_propuesta_endpoint_ya_respondida_da_400(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    regla_id = client.post(
+        "/api/empresas/empresa-test/reglas-propuestas", json={"texto": "prueba"},
+    ).get_json()["id"]
+    client.patch(
+        f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}",
+        json={"estado": "aplicada", "respuesta": "x"},
+    )
+
+    r = client.delete(f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}")
+
+    assert r.status_code == 400
+
+
+def test_eliminar_regla_propuesta_endpoint_rol_empresa_da_400(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    usuario_id = _crear_usuario("dueño@x.com", "empresa", password="ClaveSegura123")
+    conn = auth_store.conectar()
+    auth_store.asociar_empresa_a_usuario(conn, usuario_id, "900111222")
+    conn.close()
+    _crear_usuario("super@axon.com", "superusuario", password="ClaveSegura123")
+    client.post("/api/auth/login", json={"email": "super@axon.com", "password": "ClaveSegura123"})
+    regla_id = client.post(
+        "/api/empresas/empresa-test/reglas-propuestas", json={"texto": "prueba"},
+    ).get_json()["id"]
+    client.post("/api/auth/logout")
+    client.post("/api/auth/login", json={"email": "dueño@x.com", "password": "ClaveSegura123"})
+
+    r = client.delete(f"/api/empresas/empresa-test/reglas-propuestas/{regla_id}")
+
+    assert r.status_code == 400
+
+
+def test_eliminar_regla_propuesta_endpoint_sin_login_da_401(client, monkeypatch, reglas_dir):
+    _mockear_empresa(monkeypatch)
+    r = client.delete("/api/empresas/empresa-test/reglas-propuestas/1")
+    assert r.status_code == 401

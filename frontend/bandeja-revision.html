@@ -101,8 +101,8 @@
   button, select, input{font-family:inherit;}
   *:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
 
-  .app{display:grid; grid-template-columns:64px 1fr 430px; height:100vh; position:relative;}
-  .app.pinned{grid-template-columns:236px 1fr 430px;}
+  .app{display:grid; grid-template-columns:64px 1fr var(--detail-w, 430px); height:100vh; position:relative;}
+  .app.pinned{grid-template-columns:236px 1fr var(--detail-w, 430px);}
   /* Fijas a propósito: cuando el sidebar pasa a position:absolute (al
      expandirse con el cursor, ver .sidebar:hover), CSS Grid lo saca del
      cálculo de auto-ubicación y recorre .main/.detail una columna a la
@@ -326,6 +326,7 @@
   .e-pend{background:var(--line-soft); color:var(--ink-soft);}
   .e-sinc{background:var(--st-ok-soft); color:var(--st-ok);}
   .e-err{background:var(--st-error-soft); color:var(--st-error);}
+  .e-resp{background:var(--st-info-soft); color:var(--st-info);}
 
   .flag{color:var(--st-warn); font-size:12px; margin-left:5px;}
   .cuenta-cell{font-size:11.5px;}
@@ -394,6 +395,36 @@
 
   .detail-actions{display:flex; gap:7px; padding:13px 20px; border-top:1px solid var(--line);}
   .detail-actions .btn{flex:1; justify-content:center;}
+
+  /* ---------- REGLAS POR EMPRESA (vista de tarjetas, no de tabla) ---------- */
+  .rp-body{flex:1; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:24px;}
+  .rp-composer{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .rp-composer textarea{width:100%; font:inherit; font-size:12.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel-sunken); color:var(--ink); resize:vertical; margin-top:9px; transition:border-color .15s, box-shadow .15s;}
+  .rp-composer textarea:focus{border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--accent-soft);}
+  .rp-composer-actions{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:11px;}
+  .rp-composer-actions .modal-resultado{margin:0;}
+
+  .rp-lista{display:flex; flex-direction:column; gap:10px;}
+  .rp-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 17px; transition:border-color .15s, box-shadow .15s;}
+  .rp-card:hover{border-color:var(--ink-mute); box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  .rp-card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px;}
+  .rp-card-texto{font-size:13px; line-height:1.55; color:var(--ink); white-space:pre-wrap; flex:1;}
+  .rp-card-meta{margin-top:9px; font-size:10.5px; color:var(--ink-mute); display:flex; flex-wrap:wrap; gap:5px 14px;}
+  .rp-card-respuesta{margin-top:11px; padding:10px 12px; border-radius:8px; background:var(--accent-soft); border-left:3px solid var(--accent); font-size:12px; color:var(--ink-soft); line-height:1.55;}
+  .rp-card-respuesta .rp-respuesta-label{display:block; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:4px;}
+  .rp-card-aplicada{margin-top:9px; font-size:10.5px; color:var(--st-ok); font-weight:600; display:flex; align-items:center; gap:5px;}
+  .rp-empty{padding:40px 20px; text-align:center; color:var(--ink-mute); font-size:12.5px; border:1px dashed var(--line); border-radius:var(--radius); background:var(--panel-sunken);}
+
+  .rp-confirmadas{border-top:1px solid var(--line); padding-top:20px;}
+  .rp-confirmada-card{background:var(--panel-sunken); border:1px solid var(--line-soft); border-radius:var(--radius); padding:12px 15px; margin-bottom:9px;}
+  .rp-confirmada-titulo{font-size:12px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .rp-confirmada-titulo .nit{font-weight:400; font-size:10.5px;}
+  .rp-confirmada-comportamiento{display:flex; flex-wrap:wrap; gap:5px 16px; font-size:11px; color:var(--ink-soft); margin-top:7px;}
+  .rp-confirmada-comportamiento b{color:var(--ink); font-weight:600;}
+  .rp-confirmada-card details{margin-top:8px;}
+  .rp-confirmada-card summary{cursor:pointer; font-size:11px; color:var(--accent); font-weight:600; list-style:none;}
+  .rp-confirmada-card summary::-webkit-details-marker{display:none;}
+  .rp-confirmada-md{white-space:pre-wrap; font-size:11.5px; line-height:1.65; color:var(--ink-soft); margin-top:8px; max-height:280px; overflow-y:auto; padding-top:8px; border-top:1px dashed var(--line);}
 
   ::-webkit-scrollbar{width:8px; height:8px;}
   ::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
@@ -464,6 +495,7 @@
         <div class="nav-item" id="navPlanCuentas"><span class="dot"></span> Plan de cuentas</div>
         <div class="nav-item" id="navCatalogosSiigo"><span class="dot"></span> Datos maestros Siigo</div>
         <div class="nav-item" id="navDatosContai" style="display:none;"><span class="dot"></span> Datos maestros Contai</div>
+        <div class="nav-item" id="navReglasPropuestas" style="display:none;"><span class="dot"></span> Reglas de empresa</div>
         <div class="nav-item" id="navConfiguracion"><span class="dot"></span> Configuración</div>
       </div>
     </div>
@@ -629,6 +661,38 @@
           <tbody id="mcTbody"></tbody>
         </table>
         <div class="empty-state" id="mcEmptyState" style="display:none;">Todavía no se ha importado el histórico de movimientos de Contai -- ve a "Datos maestros Contai" para importarlo.</div>
+      </div>
+    </div>
+
+    <div id="vistaReglasPropuestas" style="display:none; flex-direction:column; flex:1; min-height:0;">
+      <div class="toolbar">
+        <div class="search">
+          <span>⌕</span>
+          <input id="rpBuscador" placeholder="Buscar por palabras en la regla">
+        </div>
+        <div class="seg" id="rpFiltroEstadoSeg"></div>
+        <div class="spacer"></div>
+      </div>
+
+      <div class="rp-body">
+        <div class="rp-composer">
+          <p class="section-label" style="margin:0;">Proponer una regla o duda nueva para esta empresa</p>
+          <textarea id="rpNuevoTexto" rows="2" placeholder="Describe la regla contable o la duda sobre cómo se está causando esta empresa..."></textarea>
+          <div class="rp-composer-actions">
+            <div class="modal-resultado" id="rpCrearResultado"></div>
+            <button class="btn primary" id="rpCrear" style="flex-shrink:0;">Crear regla</button>
+          </div>
+        </div>
+
+        <div>
+          <div id="rpLista" class="rp-lista"></div>
+          <div class="rp-empty" id="rpEmptyState" style="display:none;">No hay reglas propuestas todavía para esta empresa.</div>
+        </div>
+
+        <div class="rp-confirmadas" id="rpConfirmadasBloque" style="display:none;">
+          <p class="section-label">Reglas ya confirmadas (solo lectura)</p>
+          <div id="rpConfirmadasLista"></div>
+        </div>
       </div>
     </div>
   </main>
@@ -1434,7 +1498,7 @@ function tieneAlerta(f){
 }
 function etiquetaOrigen(resuelto_por){
   if(resuelto_por === 'reglas') return {cls:'b-reglas', label:'Reglas'};
-  if(resuelto_por === 'claude') return {cls:'b-claude', label:'Claude'};
+  if(resuelto_por === 'claude') return {cls:'b-claude', label:'IA'};
   if(resuelto_por === 'historico') return {cls:'b-historico', label:'Sugerido'};
   return {cls:'b-manual', label:'Tu criterio'};
 }
@@ -1640,7 +1704,7 @@ function renderTopSub(){
   const totalSinFiltro = facturasActuales().length;
   const periodo = (estado.fechaDesde || estado.fechaHasta) ? ` de ${totalSinFiltro} en total` : '';
   document.getElementById('topSub').innerHTML =
-    `<b>${total}</b> facturas${periodo} · <b>${reglas}</b> por reglas · <b>${claude}</b> por Claude · <b>${manual}</b> esperando tu criterio`;
+    `<b>${total}</b> facturas${periodo} · <b>${reglas}</b> por reglas · <b>${claude}</b> por IA · <b>${manual}</b> esperando tu criterio`;
 }
 
 function renderTabla(){
@@ -3388,6 +3452,7 @@ estado.comprasSiigo = [];
 estado.comprasSiigoAbierta = null;
 estado.movimientosContai = [];
 estado.movimientosContaiAbierto = null;
+estado.reglasPropuestas = [];
 
 function fechaISO(d){
   return d.toISOString().slice(0, 10);
@@ -3398,13 +3463,19 @@ function cambiarVista(vista){
   document.getElementById('navBandeja').classList.toggle('active', vista === 'bandeja');
   document.getElementById('navComprasSiigo').classList.toggle('active', vista === 'compras-siigo');
   document.getElementById('navMovimientosContai').classList.toggle('active', vista === 'movimientos-contai');
+  document.getElementById('navReglasPropuestas').classList.toggle('active', vista === 'reglas-propuestas');
   document.getElementById('vistaBandeja').style.display = vista === 'bandeja' ? 'contents' : 'none';
   document.getElementById('vistaComprasSiigo').style.display = vista === 'compras-siigo' ? 'flex' : 'none';
   document.getElementById('vistaMovimientosContai').style.display = vista === 'movimientos-contai' ? 'flex' : 'none';
+  document.getElementById('vistaReglasPropuestas').style.display = vista === 'reglas-propuestas' ? 'flex' : 'none';
 
   document.getElementById('detailEmpty').style.display = 'flex';
   document.getElementById('detailContent').style.display = 'none';
   document.getElementById('detail').classList.remove('mobile-open');
+  // "Reglas por empresa" no tiene factura/compra/movimiento que mostrar en
+  // el panel lateral -- se le quita el espacio en vez de dejarlo vacío.
+  document.getElementById('detail').style.display = vista === 'reglas-propuestas' ? 'none' : '';
+  document.getElementById('app').style.setProperty('--detail-w', vista === 'reglas-propuestas' ? '0px' : '430px');
 
   if(vista === 'bandeja'){
     document.getElementById('mainTitle').textContent = 'Bandeja de revisión';
@@ -3419,6 +3490,10 @@ function cambiarVista(vista){
       document.getElementById('mcHasta').value = fechaISO(hoy);
     }
     buscarMovimientosContai();
+  }else if(vista === 'reglas-propuestas'){
+    document.getElementById('mainTitle').textContent = 'Reglas de empresa';
+    document.getElementById('topSub').textContent = 'Reglas y dudas propuestas para esta empresa.';
+    buscarReglasPropuestas();
   }else{
     document.getElementById('mainTitle').textContent = 'Compras en Siigo';
     document.getElementById('topSub').textContent = 'Consulta en vivo de lo ya causado en Siigo (GET /v1/purchases) -- no son datos locales.';
@@ -3575,6 +3650,194 @@ function renderDetalleMovimientoContai(d){
   document.getElementById('dTotales').innerHTML = `
     <div class="t-row total"><span>Total débito</span><span class="num">${formatCOP(d.total_debito)}</span></div>
   `;
+}
+
+// --- vista "Reglas por empresa" (reglas/dudas propuestas por
+// superusuario/contador, más las ya confirmadas de solo lectura) ---
+const ETIQUETAS_ESTADO_REGLA = {pendiente: 'Pendiente', respondida: 'Respondida', aplicada: 'Aplicada', no_viable: 'No viable'};
+const CLASE_ESTADO_REGLA = {pendiente: 'e-pend', respondida: 'e-resp', aplicada: 'e-sinc', no_viable: 'e-err'};
+estado.rpFiltroEstado = '';
+
+function escapeHtml(texto){
+  const div = document.createElement('div');
+  div.textContent = texto == null ? '' : String(texto);
+  return div.innerHTML;
+}
+
+function formatFechaHoraCorta(iso){
+  if(!iso) return '—';
+  const hora = iso.slice(11, 16);
+  return hora ? `${formatFecha(iso.slice(0, 10))} · ${hora}` : formatFecha(iso.slice(0, 10));
+}
+
+async function buscarReglasPropuestas(){
+  const emp = empresaActual();
+  if(!emp) return;
+  const lista = document.getElementById('rpLista');
+  lista.innerHTML = '';
+  document.getElementById('rpEmptyState').style.display = 'none';
+  document.getElementById('rpEmptyState').textContent = 'Cargando…';
+  document.getElementById('rpEmptyState').style.display = 'block';
+  try{
+    const [propuestas, confirmadas] = await Promise.all([
+      apiGet(`/api/empresas/${emp.slug}/reglas-propuestas`),
+      apiGet(`/api/empresas/${emp.slug}/reglas-confirmadas`),
+    ]);
+    estado.reglasPropuestas = propuestas;
+    renderFiltroEstadoReglas();
+    renderReglasPropuestas();
+    renderReglasConfirmadas(confirmadas);
+  }catch(e){
+    document.getElementById('rpEmptyState').textContent = e.message;
+    document.getElementById('rpEmptyState').style.display = 'block';
+  }
+}
+
+function renderFiltroEstadoReglas(){
+  const cont = document.getElementById('rpFiltroEstadoSeg');
+  const conteos = {pendiente: 0, respondida: 0, aplicada: 0, no_viable: 0};
+  estado.reglasPropuestas.forEach(r => { if(conteos[r.estado] !== undefined) conteos[r.estado]++; });
+  const tabs = [
+    ['', `Todas · ${estado.reglasPropuestas.length}`],
+    ['pendiente', `Pendiente · ${conteos.pendiente}`],
+    ['respondida', `Respondida · ${conteos.respondida}`],
+    ['aplicada', `Aplicada · ${conteos.aplicada}`],
+    ['no_viable', `No viable · ${conteos.no_viable}`],
+  ];
+  cont.innerHTML = '';
+  tabs.forEach(([key, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.className = estado.rpFiltroEstado === key ? 'on' : '';
+    b.addEventListener('click', () => { estado.rpFiltroEstado = key; renderFiltroEstadoReglas(); renderReglasPropuestas(); });
+    cont.appendChild(b);
+  });
+}
+
+function renderReglasPropuestas(){
+  const cont = document.getElementById('rpLista');
+  const empty = document.getElementById('rpEmptyState');
+  const q = document.getElementById('rpBuscador').value.trim().toLowerCase();
+
+  let lista = estado.reglasPropuestas;
+  if(estado.rpFiltroEstado) lista = lista.filter(r => r.estado === estado.rpFiltroEstado);
+  if(q){
+    lista = lista.filter(r =>
+      r.texto.toLowerCase().includes(q) || (r.respuesta || '').toLowerCase().includes(q)
+    );
+  }
+
+  if(!lista.length){
+    cont.innerHTML = '';
+    empty.textContent = estado.reglasPropuestas.length
+      ? 'Ninguna regla coincide con este filtro.'
+      : 'No hay reglas propuestas todavía para esta empresa.';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  cont.innerHTML = lista.slice().reverse().map(r => `
+    <div class="rp-card">
+      <div class="rp-card-head">
+        <div class="rp-card-texto">${escapeHtml(r.texto)}</div>
+        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          <span class="estado-pill ${CLASE_ESTADO_REGLA[r.estado] || 'e-pend'}">${ETIQUETAS_ESTADO_REGLA[r.estado] || r.estado}</span>
+          ${r.estado === 'pendiente' ? `<button type="button" class="rp-card-borrar" data-id="${r.id}" title="Borrar esta regla" style="border:none; background:transparent; color:var(--ink-mute); cursor:pointer; font-size:14px; padding:2px 4px; line-height:1;">✕</button>` : ''}
+        </div>
+      </div>
+      <div class="rp-card-meta">
+        <span>Propuesta por ${escapeHtml(r.creado_por)}</span>
+        <span>${formatFechaHoraCorta(r.creado_en)}</span>
+      </div>
+      ${r.respuesta ? `
+        <div class="rp-card-respuesta">
+          <span class="rp-respuesta-label">Respuesta</span>
+          ${escapeHtml(r.respuesta)}
+        </div>
+      ` : ''}
+      ${r.aplicada_en ? `<div class="rp-card-aplicada">✓ Aplicada el ${formatFechaHoraCorta(r.aplicada_en)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderReglasConfirmadas(datos){
+  const bloque = document.getElementById('rpConfirmadasBloque');
+  const cont = document.getElementById('rpConfirmadasLista');
+  const politicas = (datos && datos.politicas_empresa) || [];
+  const proveedores = (datos && datos.perfiles_proveedor) || [];
+
+  if(!politicas.length && !proveedores.length){
+    bloque.style.display = 'none';
+    return;
+  }
+  bloque.style.display = '';
+
+  const comportamiento = (obj) => {
+    const entradas = Object.entries(obj || {}).filter(([,v]) => v !== null && v !== '' && v !== false);
+    if(!entradas.length) return '';
+    return `<div class="rp-confirmada-comportamiento">${entradas.map(([k,v]) =>
+      `<span><b>${escapeHtml(k)}:</b> ${escapeHtml(typeof v === 'object' ? JSON.stringify(v) : String(v))}</span>`
+    ).join('')}</div>`;
+  };
+  const detalle = (md) => md
+    ? `<details><summary>Ver el detalle completo</summary><div class="rp-confirmada-md">${escapeHtml(md)}</div></details>`
+    : '';
+
+  const tarjetasPolitica = politicas.map(p => `
+    <div class="rp-confirmada-card">
+      <div class="rp-confirmada-titulo">📋 Política de empresa · ${escapeHtml(p.clave)}</div>
+      ${comportamiento(p.comportamiento)}
+      ${detalle(p.detalle_md)}
+    </div>
+  `).join('');
+  const tarjetasProveedor = proveedores.map(p => `
+    <div class="rp-confirmada-card">
+      <div class="rp-confirmada-titulo">🏷️ Perfil de proveedor · ${escapeHtml(p.nombre)} <span class="nit">NIT ${escapeHtml(p.nit)}</span></div>
+      ${comportamiento(p.comportamiento)}
+      ${detalle(p.detalle_md)}
+    </div>
+  `).join('');
+  cont.innerHTML = tarjetasPolitica + tarjetasProveedor;
+}
+
+async function crearReglaPropuesta(){
+  const emp = empresaActual();
+  if(!emp) return;
+  const textarea = document.getElementById('rpNuevoTexto');
+  const resultadoEl = document.getElementById('rpCrearResultado');
+  const btn = document.getElementById('rpCrear');
+  const texto = textarea.value.trim();
+  if(!texto){
+    resultadoEl.innerHTML = '<span style="color:var(--st-error)">Escribe la regla o la duda antes de crearla.</span>';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Creando…';
+  resultadoEl.textContent = '';
+  try{
+    await apiPost(`/api/empresas/${emp.slug}/reglas-propuestas`, {texto});
+    textarea.value = '';
+    toast('Regla creada.');
+    await buscarReglasPropuestas();
+  }catch(e){
+    resultadoEl.innerHTML = `<span style="color:var(--st-error)">${e.message}</span>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Crear regla';
+  }
+}
+
+async function borrarReglaPropuesta(reglaId){
+  const emp = empresaActual();
+  if(!emp) return;
+  if(!confirm('¿Borrar esta regla? Solo se puede mientras sigue "pendiente".')) return;
+  try{
+    await apiDelete(`/api/empresas/${emp.slug}/reglas-propuestas/${reglaId}`);
+    toast('Regla borrada.');
+    await buscarReglasPropuestas();
+  }catch(e){
+    toast(e.message, true);
+  }
 }
 
 async function descargarComprasSiigo(){
@@ -3948,6 +4211,13 @@ document.getElementById('csgBuscador').addEventListener('keydown', (ev) => { if(
 document.getElementById('navMovimientosContai').addEventListener('click', () => cambiarVista('movimientos-contai'));
 document.getElementById('mcFiltrar').addEventListener('click', buscarMovimientosContai);
 document.getElementById('mcBuscador').addEventListener('keydown', (ev) => { if(ev.key === 'Enter') buscarMovimientosContai(); });
+document.getElementById('navReglasPropuestas').addEventListener('click', () => cambiarVista('reglas-propuestas'));
+document.getElementById('rpBuscador').addEventListener('input', renderReglasPropuestas);
+document.getElementById('rpCrear').addEventListener('click', crearReglaPropuesta);
+document.getElementById('rpLista').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.rp-card-borrar');
+  if(btn) borrarReglaPropuesta(parseInt(btn.dataset.id, 10));
+});
 document.getElementById('dmsCerrar').addEventListener('click', () => {
   document.getElementById('modalCatalogosSiigo').classList.remove('show');
 });
@@ -4504,6 +4774,10 @@ function actualizarVisibilidadMenusSistema(){
   document.getElementById('navGroupSistema').style.display = esSuperusuario ? '' : 'none';
   const puedeGestionarUsuarios = estado.usuarioActual && (esSuperusuario || estado.usuarioActual.puede_crear_usuarios);
   document.getElementById('navGroupAcceso').style.display = puedeGestionarUsuarios ? '' : 'none';
+  // Reglas por empresa: por ahora solo superusuario y contador (cualquier
+  // contador, no solo los que pueden crear usuarios) -- ver auth.puede_gestionar_reglas.
+  const puedeGestionarReglas = estado.usuarioActual && (esSuperusuario || estado.usuarioActual.rol === 'contador');
+  document.getElementById('navReglasPropuestas').style.display = puedeGestionarReglas ? '' : 'none';
 }
 
 async function verificarSesion(){

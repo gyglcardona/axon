@@ -1212,5 +1212,70 @@ def api_marcar_autorretenedor(slug, nit):
     return jsonify(orquestador.marcar_proveedor_autorretenedor(nit, nombre, autorretenedor))
 
 
+@app.delete("/api/empresas/<slug>/reglas-propuestas/<int:regla_id>")
+@requiere_login
+@requiere_acceso_empresa
+def api_eliminar_regla_propuesta(slug, regla_id):
+    try:
+        orquestador.eliminar_regla_propuesta(slug, regla_id, g.usuario)
+    except orquestador.EmpresaNoEncontrada as e:
+        return jsonify({"error": str(e)}), 404
+    except (auth.AuthError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"eliminada": True})
+
+
+@app.get("/api/empresas/<slug>/reglas-confirmadas")
+@requiere_login
+@requiere_acceso_empresa
+def api_reglas_confirmadas(slug):
+    try:
+        return jsonify(orquestador.reglas_confirmadas(slug, g.usuario))
+    except orquestador.EmpresaNoEncontrada as e:
+        return jsonify({"error": str(e)}), 404
+    except auth.AuthError as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.get("/api/empresas/<slug>/reglas-propuestas")
+@requiere_login
+@requiere_acceso_empresa
+def api_listar_reglas_propuestas(slug):
+    try:
+        return jsonify(orquestador.listar_reglas_propuestas(slug, g.usuario))
+    except orquestador.EmpresaNoEncontrada as e:
+        return jsonify({"error": str(e)}), 404
+    except auth.AuthError as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.post("/api/empresas/<slug>/reglas-propuestas")
+@requiere_login
+@requiere_acceso_empresa
+def api_crear_regla_propuesta(slug):
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(orquestador.crear_regla_propuesta(slug, data.get("texto", ""), g.usuario))
+    except orquestador.EmpresaNoEncontrada as e:
+        return jsonify({"error": str(e)}), 404
+    except (auth.AuthError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.patch("/api/empresas/<slug>/reglas-propuestas/<int:regla_id>")
+@requiere_login
+@requiere_acceso_empresa
+def api_cambiar_estado_regla_propuesta(slug, regla_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(orquestador.cambiar_estado_regla_propuesta(
+            slug, regla_id, data.get("estado", ""), data.get("respuesta"), g.usuario,
+        ))
+    except orquestador.EmpresaNoEncontrada as e:
+        return jsonify({"error": str(e)}), 404
+    except (auth.AuthError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

@@ -53,6 +53,33 @@ def test_guardar_y_leer_una_compra(tmp_path):
     assert impuestos == []  # la política mueve el IVA a un ítem, sin impuestos asociados
 
 
+def test_listar_proveedores_distintos(tmp_path):
+    conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
+
+    r1 = _resultado_clasificado("CUFE-PROV-A1")
+    r1.factura.proveedor_nit = "800000001"
+    r1.factura.proveedor_nombre = "PROVEEDOR UNO"
+    state_store.guardar_resultado(conn, r1, archivo_origen=Path("x.zip"))
+
+    r2 = _resultado_clasificado("CUFE-PROV-B1")
+    r2.factura.proveedor_nit = "800000002"
+    r2.factura.proveedor_nombre = "PROVEEDOR DOS"
+    state_store.guardar_resultado(conn, r2, archivo_origen=Path("x.zip"))
+
+    # segunda factura del mismo proveedor que r1 -- no debe duplicarse en el listado
+    r3 = _resultado_clasificado("CUFE-PROV-A2")
+    r3.factura.proveedor_nit = "800000001"
+    r3.factura.proveedor_nombre = "PROVEEDOR UNO"
+    state_store.guardar_resultado(conn, r3, archivo_origen=Path("x.zip"))
+
+    proveedores = state_store.listar_proveedores_distintos(conn)
+
+    assert proveedores == [
+        {"nit": "800000002", "nombre": "PROVEEDOR DOS"},
+        {"nit": "800000001", "nombre": "PROVEEDOR UNO"},
+    ]
+
+
 def test_no_permite_cufe_duplicado_entre_corridas(tmp_path):
     conn = state_store.conectar(NIT_EMPRESA_PRUEBA, base_dir=tmp_path)
     state_store.guardar_resultado(conn, _resultado_clasificado("CUFE-REPETIDO"), Path("uno.zip"))
