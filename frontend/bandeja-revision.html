@@ -3751,9 +3751,13 @@ function renderReglasPropuestas(){
 
   if(!lista.length){
     cont.innerHTML = '';
-    empty.textContent = estado.reglasPropuestas.length
-      ? 'Ninguna regla coincide con este filtro.'
-      : 'No hay reglas propuestas todavía para esta empresa.';
+    if(!estado.reglasPropuestas.length){
+      // sin ninguna regla creada todavía para esta empresa -- no tiene
+      // caso ocupar espacio en pantalla solo para decirlo.
+      empty.style.display = 'none';
+      return;
+    }
+    empty.textContent = 'Ninguna regla coincide con este filtro.';
     empty.style.display = 'block';
     return;
   }
